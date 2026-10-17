@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: after-save record-triggered flow that runs only when the record
+  newly meets its condition, with an asynchronous path and a scheduled path,
+  and an explicit trigger order.
+  Replaces: after-save work on every save, synchronous callouts and emails,
+  and schedule-triggered flows that poll for due records.
+  Trigger event: CreateAndUpdate because a deal entered as already Closed Won
+  still needs a handover. That reason belongs to this example. With
+  CreateAndUpdate, "only when updated to meet the condition" also fires on a
+  create that already meets it. When only a change into the condition counts,
+  use recordTriggerType Update (references/record-triggered.md).
+  Shape notes:
+  - doesRequireRecordChangedToMeetCriteria=true is "Only when a record is
+    updated to meet the condition requirements". Scheduled paths need it on
+    update triggers.
+  - The asynchronous path is a scheduledPaths entry with pathType
+    AsyncAfterCommit and no label, offset, time source, or batch size (deploy
+    error otherwise).
+    Only one per flow (deploy error otherwise).
+  - A scheduled path is timeSource RecordField + recordField + offsetNumber +
+    offsetUnit (Minutes, Hours, Days, Months). A negative offset runs before
+    the date.
+  - $Record__Prior is not available on scheduled paths.
+  Verified: deployed and run on API 67.0 (Summer '26). The async path ran once
+  across three saves.
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <description>When an opportunity becomes Closed Won: handover task asynchronously after commit, check-in task 30 days after CloseDate.</description>
+    <interviewLabel>Opportunity Closed Won Handover {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Opportunity Closed Won Handover</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Create_Checkin_Task</name>
+        <label>Create Checkin Task</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <inputAssignments>
+            <field>Subject</field>
+            <value>
+                <stringValue>30-day check-in</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>WhatId</field>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Task</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordCreates>
+        <name>Create_Handover_Task</name>
+        <label>Create Handover Task</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <inputAssignments>
+            <field>Subject</field>
+            <value>
+                <stringValue>Handover to delivery</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>WhatId</field>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Task</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <doesRequireRecordChangedToMeetCriteria>true</doesRequireRecordChangedToMeetCriteria>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>StageName</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Closed Won</stringValue>
+            </value>
+        </filters>
+        <object>Opportunity</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <scheduledPaths>
+            <name>Run_Async</name>
+            <connector>
+                <targetReference>Create_Handover_Task</targetReference>
+            </connector>
+            <pathType>AsyncAfterCommit</pathType>
+        </scheduledPaths>
+        <scheduledPaths>
+            <name>X30_Days_After_Close</name>
+            <connector>
+                <targetReference>Create_Checkin_Task</targetReference>
+            </connector>
+            <label>30 Days After Close</label>
+            <maxBatchSize>200</maxBatchSize>
+            <offsetNumber>30</offsetNumber>
+            <offsetUnit>Days</offsetUnit>
+            <recordField>CloseDate</recordField>
+            <timeSource>RecordField</timeSource>
+        </scheduledPaths>
+        <triggerType>RecordAfterSave</triggerType>
+    </start>
+    <status>Active</status>
+    <triggerOrder>100</triggerOrder>
+</Flow>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: platform event-triggered flow. It is an autolaunched flow whose
+  Start has triggerType PlatformEvent and its object set to the event, and
+  the event's fields are on $Record. It is not a record-triggered flow.
+  Runs asynchronously in its own transaction, in batches of up to 200 events.
+  Cannot call subflows.
+  Replaces: an Apex trigger on the event written only to start Flow logic.
+  Verified: deployed and run on API 67.0 (Summer '26).
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <description>Creates a task for every Order_Event__e message.</description>
+    <formulas>
+        <name>fxSubject</name>
+        <dataType>String</dataType>
+        <expression>&quot;Order event: &quot; &amp; {!$Record.Order_Ref__c}</expression>
+    </formulas>
+    <interviewLabel>Order Event Create Task {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Order Event Create Task</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Create_Order_Task</name>
+        <label>Create Order Task</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <inputAssignments>
+            <field>Subject</field>
+            <value>
+                <elementReference>fxSubject</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Task</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Create_Order_Task</targetReference>
+        </connector>
+        <object>Order_Event__e</object>
+        <triggerType>PlatformEvent</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

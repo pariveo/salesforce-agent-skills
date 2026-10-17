@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+# Git has no built-in XML diff driver. The html driver puts the enclosing
+# element in each hunk header, which works for Flow metadata.
+*.xml diff=html
+*.flow-meta.xml diff=html linguist-language=XML

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: count related records in a before-save flow without a loop.
+  Get Records, then Collection Filter, then Assignment with operator
+  AssignCount. Transform is not allowed in before-save flows, and counts need
+  no loop (this shape). Only a Sum in a before-save flow justifies a loop
+  (escape E3).
+  The trigger is update-only on purpose, because on create $Record.Id is null
+  before save, and a Get Records on AccountId = $Record.Id would match every
+  contact without an account. For create, branch on ISNEW() and assign 0
+  instead of querying.
+  NumberOfEmployees stands in for a custom number field such as
+  Contacts_With_Email__c, so replace it in real use.
+  It runs on every account update by design, because it recounts. Add an
+  entry condition when only specific changes should trigger a recount.
+  Verified: deployed and run on API 67.0 (Summer '26).
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_Count</name>
+        <label>Assign Count</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.NumberOfEmployees</assignToReference>
+            <operator>AssignCount</operator>
+            <value>
+                <elementReference>Filter_Contacts_With_Email</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <collectionProcessors>
+        <name>Filter_Contacts_With_Email</name>
+        <label>Filter Contacts With Email</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNextValueToReference>currentItem_Filter_Contacts_With_Email</assignNextValueToReference>
+        <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
+        <collectionReference>Get_Contacts</collectionReference>
+        <conditionLogic>and</conditionLogic>
+        <conditions>
+            <leftValueReference>currentItem_Filter_Contacts_With_Email.Email</leftValueReference>
+            <operator>IsNull</operator>
+            <rightValue>
+                <booleanValue>false</booleanValue>
+            </rightValue>
+        </conditions>
+        <connector>
+            <targetReference>Assign_Count</targetReference>
+        </connector>
+    </collectionProcessors>
+    <description>Before save on update, stores the number of the account&apos;s contacts that have an email address.</description>
+    <interviewLabel>Account Before Save Count Contacts {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Account Before Save Count Contacts</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <name>Get_Contacts</name>
+        <label>Get Contacts</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Filter_Contacts_With_Email</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>AccountId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Contact</object>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Email</queriedFields>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Contacts</targetReference>
+        </connector>
+        <object>Account</object>
+        <recordTriggerType>Update</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>currentItem_Filter_Contacts_With_Email</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Contact</objectType>
+    </variables>
+</Flow>

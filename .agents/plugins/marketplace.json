@@ -1,0 +1,19 @@
+{
+  "name": "pariveo",
+  "interface": {
+    "displayName": "Pariveo"
+  },
+  "plugins": [
+    {
+      "name": "salesforce-agent-skills",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

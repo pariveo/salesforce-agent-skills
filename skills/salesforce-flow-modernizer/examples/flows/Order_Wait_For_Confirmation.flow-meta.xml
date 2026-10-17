@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: autolaunched flow that pauses until a matching platform event
+  arrives, then resumes with the event's data.
+  Replaces: polling loops, or schedule-triggered flows checking for the condition.
+  Shape notes:
+  - waitEvents.eventType is the platform event API name.
+  - The resume filter is inputParameters (name is the event field, value is
+    what it must equal). The conditions tag does not work here, because a bare
+    field name, $Record and Event__e.Field all fail deployment.
+  - outputParameters named after the event assign the received message to a
+    record variable of that event type.
+  - Wait elements need an autolaunched flow (or orchestration). Screen flows
+    and record-triggered flows cannot use them, so record-triggered flows use
+    scheduled paths.
+  Verified: deployed and run on API 67.0 (Summer '26). It ignored a
+  non-matching event and resumed on the matching one.
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <description>Waits for the Order_Event__e whose Order_Ref__c equals orderRef, then creates a task.</description>
+    <formulas>
+        <name>fxSubject</name>
+        <dataType>String</dataType>
+        <expression>&quot;Confirmed: &quot; &amp; {!receivedEvent.Order_Ref__c}</expression>
+    </formulas>
+    <interviewLabel>Order Wait For Confirmation {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Order Wait For Confirmation</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Create_Confirmation_Task</name>
+        <label>Create Confirmation Task</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <inputAssignments>
+            <field>Subject</field>
+            <value>
+                <elementReference>fxSubject</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Task</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Wait_For_Order_Event</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>orderRef</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>receivedEvent</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Order_Event__e</objectType>
+    </variables>
+    <waits>
+        <name>Wait_For_Order_Event</name>
+        <label>Wait For Order Event</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnectorLabel>Default Path</defaultConnectorLabel>
+        <waitEvents>
+            <name>Order_Confirmed</name>
+            <connector>
+                <targetReference>Create_Confirmation_Task</targetReference>
+            </connector>
+            <eventType>Order_Event__e</eventType>
+            <inputParameters>
+                <name>Order_Ref__c</name>
+                <value>
+                    <elementReference>orderRef</elementReference>
+                </value>
+            </inputParameters>
+            <label>Order Confirmed</label>
+            <outputParameters>
+                <assignToReference>receivedEvent</assignToReference>
+                <name>Order_Event__e</name>
+            </outputParameters>
+        </waitEvents>
+    </waits>
+</Flow>

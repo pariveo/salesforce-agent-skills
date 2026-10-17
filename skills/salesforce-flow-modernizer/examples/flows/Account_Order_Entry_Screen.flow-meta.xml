@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: screen flow contract and reactive screen.
+  - recordId input (set by record pages and quick actions), explicit output.
+  - Record choice set (dynamicChoiceSets without picklistField) and picklist
+    choice set (picklistObject + picklistField, dataType Picklist).
+  - Reactive total: a formula over two inputs on the same screen, shown in
+    Display Text, which recalculates as the user types (API 59+, Lightning
+    runtime) with no Next round trip and no Decision.
+  - visibilityRule shows a component conditionally. validationRule blocks
+    Next with a message on the field (InputField, LargeTextArea, PasswordField).
+  Replaces: Get Records + Loop to build choices, a second screen to
+  recalculate, and a Decision after the screen routing back to an error screen.
+  Verified: deployed on API 67.0 (Summer '26). Runtime reactivity is documented
+  behaviour, not observed in this repository's checks.
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_Output</name>
+        <label>Assign Output</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>selectedContactId</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Contact_Picker</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <description>Captures an order for the account on the record page: contact, lead source, quantity with a live total.</description>
+    <dynamicChoiceSets>
+        <name>AccountContacts</name>
+        <dataType>String</dataType>
+        <displayField>Name</displayField>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>AccountId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <object>Contact</object>
+        <sortField>LastName</sortField>
+        <sortOrder>Asc</sortOrder>
+        <valueField>Id</valueField>
+    </dynamicChoiceSets>
+    <dynamicChoiceSets>
+        <name>LeadSourceValues</name>
+        <dataType>Picklist</dataType>
+        <displayField xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+        <object xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+        <picklistField>LeadSource</picklistField>
+        <picklistObject>Opportunity</picklistObject>
+    </dynamicChoiceSets>
+    <formulas>
+        <name>fxOrderTotal</name>
+        <dataType>Currency</dataType>
+        <expression>{!Quantity} * {!Unit_Price}</expression>
+        <scale>2</scale>
+    </formulas>
+    <interviewLabel>Account Order Entry Screen {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Account Order Entry Screen</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <screens>
+        <name>Order_Details</name>
+        <label>Order Details</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Assign_Output</targetReference>
+        </connector>
+        <fields>
+            <name>Contact_Picker</name>
+            <choiceReferences>AccountContacts</choiceReferences>
+            <dataType>String</dataType>
+            <fieldText>Contact</fieldText>
+            <fieldType>DropdownBox</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <fields>
+            <name>Lead_Source</name>
+            <choiceReferences>LeadSourceValues</choiceReferences>
+            <dataType>String</dataType>
+            <fieldText>Lead source</fieldText>
+            <fieldType>RadioButtons</fieldType>
+            <isRequired>false</isRequired>
+        </fields>
+        <fields>
+            <name>Quantity</name>
+            <dataType>Number</dataType>
+            <fieldText>Quantity</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+            <scale>0</scale>
+            <validationRule>
+                <errorMessage>Quantity must be between 1 and 500.</errorMessage>
+                <formulaExpression>{!Quantity} &gt;= 1 &amp;&amp; {!Quantity} &lt;= 500</formulaExpression>
+            </validationRule>
+        </fields>
+        <fields>
+            <name>Unit_Price</name>
+            <dataType>Currency</dataType>
+            <fieldText>Unit price</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+            <scale>2</scale>
+        </fields>
+        <fields>
+            <name>Total_Display</name>
+            <fieldText>&lt;p&gt;Order total: {!fxOrderTotal}&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>Bulk_Reason</name>
+            <fieldText>Reason for a bulk order</fieldText>
+            <fieldType>LargeTextArea</fieldType>
+            <isRequired>true</isRequired>
+            <visibilityRule>
+                <conditionLogic>and</conditionLogic>
+                <conditions>
+                    <leftValueReference>Quantity</leftValueReference>
+                    <operator>GreaterThan</operator>
+                    <rightValue>
+                        <numberValue>100.0</numberValue>
+                    </rightValue>
+                </conditions>
+            </visibilityRule>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Order_Details</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>selectedContactId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+</Flow>

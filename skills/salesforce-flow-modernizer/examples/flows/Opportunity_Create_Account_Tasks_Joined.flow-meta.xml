@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: Transform inner join of two collections, then map the joined rows.
+  Replaces: nested loops, or Get Records inside a loop, to stitch two collections.
+  Shape notes (the Metadata API reference marks transformValueName and
+  transformValueReference "reserved", although the platform uses them for
+  joins):
+  - Both transformValues live in a single Transform element, because the
+    join name is visible only inside it (a deploy error showed that a second
+    Transform cannot read it).
+  - First transformValues: one InnerJoin action with an inputParameter named
+    "Table" holding a JoinDefinition JSON, and a transformValueName for the join.
+  - Second transformValues: Map actions reading
+    <transformValueName>[$EachItem].LeftTable.<Field> / .RightTable.<Field>
+    through transformValueReference. Formulas cannot reference joined rows.
+  - Only fields listed in leftSelectedFields and rightSelectedFields are
+    mappable.
+  - Inner join: rows without a match on both sides are dropped.
+  Verified: deployed and run on API 67.0 (Summer '26). Requires API 63.0+.
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <description>Joins open opportunities to their accounts and creates one task per matched opportunity, named after the account.</description>
+    <interviewLabel>Opportunity Create Account Tasks Joined {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Opportunity Create Account Tasks Joined</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Create_Tasks</name>
+        <label>Create Tasks</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <inputReference>Join_Opportunities_To_Accounts</inputReference>
+    </recordCreates>
+    <assignments>
+        <name>Assign_Fault_Message</name>
+        <label>Assign Fault Message</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>errorMessage</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.FaultMessage</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <recordLookups>
+        <name>Get_Accounts</name>
+        <label>Get Accounts</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Join_Opportunities_To_Accounts</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Account</object>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Name</queriedFields>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <name>Get_Open_Opportunities</name>
+        <label>Get Open Opportunities</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Accounts</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>IsClosed</field>
+            <operator>EqualTo</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Opportunity</object>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Name</queriedFields>
+        <queriedFields>AccountId</queriedFields>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Open_Opportunities</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <transforms>
+        <name>Join_Opportunities_To_Accounts</name>
+        <label>Join Opportunities To Accounts</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Create_Tasks</targetReference>
+        </connector>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <objectType>Task</objectType>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+        <transformValues>
+            <transformValueActions>
+                <inputParameters>
+                    <name>Table</name>
+                    <value>
+                        <complexValue>{&quot;leftElementReference&quot;:&quot;Get_Open_Opportunities&quot;,&quot;leftJoinKeys&quot;:[&quot;AccountId&quot;],&quot;leftSelectedFields&quot;:[&quot;Id&quot;,&quot;Name&quot;],&quot;rightElementReference&quot;:&quot;Get_Accounts&quot;,&quot;rightJoinKeys&quot;:[&quot;Id&quot;],&quot;rightSelectedFields&quot;:[&quot;Name&quot;]}</complexValue>
+                        <complexValueType>JoinDefinition</complexValueType>
+                    </value>
+                </inputParameters>
+                <transformType>InnerJoin</transformType>
+            </transformValueActions>
+            <transformValueName>OppsWithAccounts</transformValueName>
+        </transformValues>
+        <transformValues>
+            <transformValueActions>
+                <outputFieldApiName>WhatId</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <transformValueReference>OppsWithAccounts[$EachItem].LeftTable.Id</transformValueReference>
+                </value>
+            </transformValueActions>
+            <transformValueActions>
+                <outputFieldApiName>Subject</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <transformValueReference>OppsWithAccounts[$EachItem].RightTable.Name</transformValueReference>
+                </value>
+            </transformValueActions>
+            <transformValueActions>
+                <outputFieldApiName>Description</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <transformValueReference>OppsWithAccounts[$EachItem].LeftTable.Name</transformValueReference>
+                </value>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <variables>
+        <name>errorMessage</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+</Flow>

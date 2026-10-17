@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: a loop that is correct, declared with its escape condition.
+  Each opportunity's allocation depends on the budget left after the previous
+  one (escape E2, cross-item state), which no Transform can express.
+  Collection Sort sorts its input collection in place, so the loop iterates
+  Get_Open_Opportunities after the Sort element, through an explicit loop
+  variable (a deploy error showed that formulas cannot read fields through
+  the loop's automatic output here).
+  Around the loop the flow keeps current patterns, with Collection Sort
+  instead of sorting by hand, records built in memory, one Create Records
+  after the loop, and no DML or Get Records inside it.
+  The escape is declared in the loop's description so reviewers and
+  scripts/check-flow.mjs can see why the loop exists.
+  Verified: deployed and run on API 67.0 (Summer '26).
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_Allocation</name>
+        <label>Assign Allocation</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Loop_Opportunities</targetReference>
+        </connector>
+        <assignmentItems>
+            <assignToReference>allocationTask.WhatId</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>currentOpportunity.Id</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>allocationTask.Subject</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>Budget allocated</stringValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>allocationTask.Description</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>fxAllocationText</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>allocationTasks</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>allocationTask</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>remainingBudget</assignToReference>
+            <operator>Subtract</operator>
+            <value>
+                <elementReference>fxAllocation</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <assignments>
+        <name>Assign_Fault_Message</name>
+        <label>Assign Fault Message</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>errorMessage</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.FaultMessage</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <assignments>
+        <name>Assign_Starting_Budget</name>
+        <label>Assign Starting Budget</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Open_Opportunities</targetReference>
+        </connector>
+        <assignmentItems>
+            <assignToReference>remainingBudget</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>budget</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <collectionProcessors>
+        <name>Sort_By_Close_Date</name>
+        <label>Sort By Close Date</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <collectionProcessorType>SortCollectionProcessor</collectionProcessorType>
+        <collectionReference>Get_Open_Opportunities</collectionReference>
+        <connector>
+            <targetReference>Loop_Opportunities</targetReference>
+        </connector>
+        <sortOptions>
+            <doesPutEmptyStringAndNullFirst>false</doesPutEmptyStringAndNullFirst>
+            <sortField>CloseDate</sortField>
+            <sortOrder>Asc</sortOrder>
+        </sortOptions>
+    </collectionProcessors>
+    <description>Allocates an input budget across open opportunities, earliest close date first, and records each allocation as a task.</description>
+    <formulas>
+        <name>fxAllocation</name>
+        <dataType>Currency</dataType>
+        <expression>MAX(0, MIN({!remainingBudget}, BLANKVALUE({!currentOpportunity.Amount}, 0)))</expression>
+        <scale>2</scale>
+    </formulas>
+    <formulas>
+        <name>fxAllocationText</name>
+        <dataType>String</dataType>
+        <expression>&quot;Allocated: &quot; &amp; TEXT({!fxAllocation})</expression>
+    </formulas>
+    <interviewLabel>Opportunity Allocate Budget Waterfall {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Opportunity Allocate Budget Waterfall</label>
+    <loops>
+        <description>Escape: E2 cross-item state. Each allocation depends on the budget remaining after the previous opportunity.</description>
+        <name>Loop_Opportunities</name>
+        <label>Loop Opportunities</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNextValueToReference>currentOpportunity</assignNextValueToReference>
+        <collectionReference>Get_Open_Opportunities</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Assign_Allocation</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Create_Allocation_Tasks</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Create_Allocation_Tasks</name>
+        <label>Create Allocation Tasks</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <inputReference>allocationTasks</inputReference>
+    </recordCreates>
+    <recordLookups>
+        <name>Get_Open_Opportunities</name>
+        <label>Get Open Opportunities</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Sort_By_Close_Date</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>IsClosed</field>
+            <operator>EqualTo</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Opportunity</object>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Amount</queriedFields>
+        <queriedFields>CloseDate</queriedFields>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Assign_Starting_Budget</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>allocationTask</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Task</objectType>
+    </variables>
+    <variables>
+        <name>allocationTasks</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Task</objectType>
+    </variables>
+    <variables>
+        <name>budget</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
+    <variables>
+        <name>currentOpportunity</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Opportunity</objectType>
+    </variables>
+    <variables>
+        <name>errorMessage</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>remainingBudget</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+        <scale>2</scale>
+    </variables>
+</Flow>

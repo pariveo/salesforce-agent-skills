@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: Get Records -> Filter -> Transform (Sum, Count, Map) -> one bulk Create.
+  Replaces: a Loop with a Decision and an Assignment into a second collection,
+  loop counters, and Create Records inside a loop.
+  Verified: deployed and run on API 67.0 (Summer '26).
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_Fault_Message</name>
+        <label>Assign Fault Message</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>errorMessage</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.FaultMessage</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <assignments>
+        <name>Assign_Outputs</name>
+        <label>Assign Outputs</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>totalAmount</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Transform_Total_Amount</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>taskCount</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Transform_Count</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <!-- Filter: conditions reference the auto-declared currentItem_<FilterName> variable. -->
+    <collectionProcessors>
+        <name>Filter_Large_Opportunities</name>
+        <label>Filter Large Opportunities</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignNextValueToReference>currentItem_Filter_Large_Opportunities</assignNextValueToReference>
+        <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
+        <collectionReference>Get_Open_Opportunities</collectionReference>
+        <conditionLogic>and</conditionLogic>
+        <conditions>
+            <leftValueReference>currentItem_Filter_Large_Opportunities.Amount</leftValueReference>
+            <operator>GreaterThanOrEqualTo</operator>
+            <rightValue>
+                <elementReference>minAmount</elementReference>
+            </rightValue>
+        </conditions>
+        <connector>
+            <targetReference>Transform_Total_Amount</targetReference>
+        </connector>
+    </collectionProcessors>
+    <description>Totals and counts open opportunities at or above minAmount and creates one follow-up task per opportunity in a single DML.</description>
+    <interviewLabel>Opportunity Create Followup Tasks {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Opportunity Create Followup Tasks</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <!-- One DML for the whole collection the Transform produced. -->
+    <recordCreates>
+        <name>Create_Tasks</name>
+        <label>Create Tasks</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Assign_Outputs</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <inputReference>Transform_To_Tasks</inputReference>
+    </recordCreates>
+    <recordLookups>
+        <name>Get_Open_Opportunities</name>
+        <label>Get Open Opportunities</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Filter_Large_Opportunities</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>IsClosed</field>
+            <operator>EqualTo</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Opportunity</object>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Name</queriedFields>
+        <queriedFields>Amount</queriedFields>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Open_Opportunities</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <!-- Aggregate: Sum over one field. Output is referenced by the element name. -->
+    <transforms>
+        <name>Transform_Total_Amount</name>
+        <label>Transform Total Amount</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Transform_Count</targetReference>
+        </connector>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <scale>2</scale>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+        <transformValues>
+            <transformValueActions>
+                <inputParameters>
+                    <name>aggregationValues</name>
+                    <value>
+                        <elementReference>Filter_Large_Opportunities</elementReference>
+                    </value>
+                </inputParameters>
+                <inputParameters>
+                    <name>aggregationField</name>
+                    <value>
+                        <stringValue>Amount</stringValue>
+                    </value>
+                </inputParameters>
+                <transformType>Sum</transformType>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <!-- Aggregate: Count needs only aggregationValues. -->
+    <transforms>
+        <name>Transform_Count</name>
+        <label>Transform Count</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Transform_To_Tasks</targetReference>
+        </connector>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <scale>0</scale>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+        <transformValues>
+            <transformValueActions>
+                <inputParameters>
+                    <name>aggregationValues</name>
+                    <value>
+                        <elementReference>Filter_Large_Opportunities</elementReference>
+                    </value>
+                </inputParameters>
+                <transformType>Count</transformType>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <!-- Map: one target collection; source items via [$EachItem]; values by reference, formula, or constant. -->
+    <transforms>
+        <name>Transform_To_Tasks</name>
+        <label>Transform To Tasks</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Create_Tasks</targetReference>
+        </connector>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <objectType>Task</objectType>
+        <scale>0</scale>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+        <transformValues>
+            <transformValueActions>
+                <outputFieldApiName>WhatId</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <elementReference>Filter_Large_Opportunities[$EachItem].Id</elementReference>
+                </value>
+            </transformValueActions>
+            <transformValueActions>
+                <outputFieldApiName>Subject</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <formulaDataType>String</formulaDataType>
+                    <formulaExpression>&quot;Follow up: &quot; &amp; {!Filter_Large_Opportunities[$EachItem].Name}</formulaExpression>
+                </value>
+            </transformValueActions>
+            <transformValueActions>
+                <outputFieldApiName>Status</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <stringValue>Not Started</stringValue>
+                </value>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <variables>
+        <name>currentItem_Filter_Large_Opportunities</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Opportunity</objectType>
+    </variables>
+    <variables>
+        <name>errorMessage</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>minAmount</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
+    <variables>
+        <name>taskCount</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+        <scale>0</scale>
+    </variables>
+    <variables>
+        <name>totalAmount</name>
+        <dataType>Currency</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+        <scale>2</scale>
+    </variables>
+</Flow>

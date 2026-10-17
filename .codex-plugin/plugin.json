@@ -1,0 +1,33 @@
+{
+  "name": "salesforce-agent-skills",
+  "version": "0.3.1",
+  "description": "Salesforce Flow skill for AI coding agents: builds and audits Flows with current elements instead of loop-and-decision patterns, with deploy-verified metadata examples and a checker.",
+  "author": {
+    "name": "Pariveo",
+    "url": "https://pariveo.eu"
+  },
+  "homepage": "https://github.com/pariveo/salesforce-agent-skills",
+  "repository": "https://github.com/pariveo/salesforce-agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "salesforce",
+    "flow",
+    "modernization",
+    "migration",
+    "audit"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Salesforce agent skills by Pariveo",
+    "shortDescription": "Audit-first Salesforce Flow modernization",
+    "longDescription": "Maps every Flow requirement to its current element, writes metadata from deploy-verified examples, and checks it for legacy patterns and deploy-time errors. Audits existing Flows with ranked findings and a migration plan. Deploy-validates when the Salesforce CLI is authenticated, and writes build specs without org access.",
+    "developerName": "Pariveo",
+    "category": "Developer Tools",
+    "websiteURL": "https://pariveo.eu",
+    "defaultPrompt": [
+      "Audit this Flow for legacy patterns",
+      "Build a record-triggered Flow for renewal reminders",
+      "Review my Flow XML before I deploy it"
+    ]
+  }
+}

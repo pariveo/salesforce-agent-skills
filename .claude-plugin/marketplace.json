@@ -1,0 +1,15 @@
+{
+  "name": "pariveo",
+  "description": "Pariveo's Salesforce agent skills: audit-first modernization of Flows to current platform patterns, with an org-conventions file the team fills in.",
+  "owner": {
+    "name": "Pariveo",
+    "url": "https://pariveo.eu"
+  },
+  "plugins": [
+    {
+      "name": "salesforce-agent-skills",
+      "source": "./",
+      "description": "Audit-first Salesforce Flow skill: legacy-pattern inventory ranked by impact, current replacements, build specs without org access, deploy-validated metadata with it."
+    }
+  ]
+}

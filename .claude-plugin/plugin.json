@@ -1,0 +1,22 @@
+{
+  "name": "salesforce-agent-skills",
+  "displayName": "Salesforce agent skills by Pariveo",
+  "version": "0.3.1",
+  "description": "Salesforce Flow skill for AI coding agents: builds and audits Flows with current elements (Filter, Transform with joins, choice sets, reactive screens, before-save, async and scheduled paths, event waits) instead of loop-and-decision patterns. Ships deploy-verified metadata examples, a checker, and an org-conventions file the team fills in.",
+  "author": {
+    "name": "Pariveo",
+    "url": "https://pariveo.eu"
+  },
+  "homepage": "https://github.com/pariveo/salesforce-agent-skills",
+  "repository": "https://github.com/pariveo/salesforce-agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "salesforce",
+    "flow",
+    "flow-builder",
+    "modernization",
+    "migration",
+    "audit",
+    "agent-skills"
+  ]
+}

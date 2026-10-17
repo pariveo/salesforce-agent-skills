@@ -1,0 +1,29 @@
+name: Pattern request
+description: A Flow requirement the decision table doesn't cover, or a row that Salesforce has changed.
+labels: [pattern]
+body:
+  - type: textarea
+    id: requirement
+    attributes:
+      label: Requirement
+      description: What the flow has to do, in the words a business user would use. One requirement per issue.
+    validations:
+      required: true
+  - type: textarea
+    id: element
+    attributes:
+      label: Element or behaviour
+      description: The Flow element, setting or behaviour that meets the requirement, and the legacy pattern it replaces, if you know them.
+  - type: input
+    id: docs
+    attributes:
+      label: Salesforce documentation
+      description: A link on help.salesforce.com or developer.salesforce.com that describes the element or the change. A release note counts.
+      placeholder: "https://help.salesforce.com/s/articleView?id=..."
+    validations:
+      required: true
+  - type: input
+    id: api-version
+    attributes:
+      label: Lowest org API version
+      description: The first org API version that has the element, if the documentation states it.

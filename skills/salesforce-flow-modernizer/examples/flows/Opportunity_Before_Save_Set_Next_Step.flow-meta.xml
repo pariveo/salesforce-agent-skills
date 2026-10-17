@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: before-save record-triggered flow. Entry formula gates on real
+  changes, Assignment writes $Record fields without DML, Custom Error blocks
+  the save inline on a field.
+  Replaces: an after-save Update Records on the triggering record, and a
+  Decision as the first element doing the entry condition's job.
+  Before-save accepts: Assignment, Decision, Get Records, Loop, Collection
+  Filter, Collection Sort, Custom Error. It rejects Transform (deploy error),
+  actions, subflows, and DML.
+  Verified: deployed and run on API 67.0 (Summer '26).
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <assignments>
+        <name>Assign_Next_Step</name>
+        <label>Assign Next Step</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Dec_Amount_Negative</targetReference>
+        </connector>
+        <assignmentItems>
+            <assignToReference>$Record.NextStep</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>fxNextStep</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <customErrors>
+        <name>Error_Negative_Amount</name>
+        <label>Error Negative Amount</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <customErrorMessages>
+            <errorMessage>Amount cannot be negative.</errorMessage>
+            <fieldSelection>Amount</fieldSelection>
+            <isFieldError>true</isFieldError>
+        </customErrorMessages>
+    </customErrors>
+    <decisions>
+        <name>Dec_Amount_Negative</name>
+        <label>Amount Negative?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>Amount_Is_Negative</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Amount</leftValueReference>
+                <operator>LessThan</operator>
+                <rightValue>
+                    <numberValue>0.0</numberValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Error_Negative_Amount</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
+    <description>Sets NextStep from the stage and blocks negative amounts. Runs only on create or when StageName or Amount changes.</description>
+    <formulas>
+        <name>fxNextStep</name>
+        <dataType>String</dataType>
+        <expression>&quot;Stage: &quot; &amp; TEXT({!$Record.StageName})</expression>
+    </formulas>
+    <interviewLabel>Opportunity Before Save Set Next Step {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Opportunity Before Save Set Next Step</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Assign_Next_Step</targetReference>
+        </connector>
+        <filterFormula>ISNEW() || ISCHANGED({!$Record.StageName}) || ISCHANGED({!$Record.Amount})</filterFormula>
+        <object>Opportunity</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

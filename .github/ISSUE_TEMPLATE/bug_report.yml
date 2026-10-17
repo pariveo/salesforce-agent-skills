@@ -1,0 +1,72 @@
+name: Bug report
+description: The skill, the checker or the hook did something wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A bug here is usually one of three things. The agent chose a legacy
+        pattern the decision table covers, the checker missed or misreported a
+        pattern, or metadata built from an example failed to deploy. Report a
+        security problem privately instead, as SECURITY.md describes.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you asked for, what the agent or the checker did, and what you expected instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      options:
+        - Claude Code
+        - Codex CLI
+        - Codex IDE extension
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: agent-version
+    attributes:
+      label: Agent version
+      description: The output of `claude --version` or `codex --version`.
+      placeholder: "2.1.296 (Claude Code)"
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: The model the agent ran on.
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: The version in `.claude-plugin/plugin.json`, or the release you installed.
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: input
+    id: api-version
+    attributes:
+      label: Org API version
+      description: 'The "Api Version" that `sf org display --target-org <alias>` shows, or `sourceApiVersion` from `sfdx-project.json`. Write "no org" if none was connected.'
+      placeholder: "67.0"
+    validations:
+      required: true
+  - type: textarea
+    id: checker-output
+    attributes:
+      label: Checker output
+      description: The output of `node <skill-dir>/scripts/check-flow.mjs --api <version> <file>` on the flow in question.
+      render: text
+  - type: textarea
+    id: flow
+    attributes:
+      label: Flow metadata or deploy error
+      description: The relevant part of the `.flow-meta.xml`, or the exact deploy error. Remove customer data, IDs and addresses first.
+      render: xml

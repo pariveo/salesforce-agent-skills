@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Private agent workspace state
+.claude/
+.codex/
+
+# Eval run output
+evals/results/
