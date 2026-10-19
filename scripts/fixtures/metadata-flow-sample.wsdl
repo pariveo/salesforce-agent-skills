@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A cut-down Metadata WSDL for the smoke test of diff-flow-schema.mjs. The
+     type and field names follow the real WSDL's shape, not its full content. -->
+<definitions targetNamespace="http://soap.sforce.com/2006/04/metadata" xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://soap.sforce.com/2006/04/metadata">
+ <types>
+  <xsd:schema elementFormDefault="qualified" targetNamespace="http://soap.sforce.com/2006/04/metadata">
+   <xsd:complexType name="Metadata">
+    <xsd:sequence>
+     <xsd:element name="fullName" minOccurs="0" type="xsd:string"/>
+    </xsd:sequence>
+   </xsd:complexType>
+   <xsd:complexType name="Flow">
+    <xsd:complexContent>
+     <xsd:extension base="tns:Metadata">
+      <xsd:sequence>
+       <xsd:element name="apiVersion" minOccurs="0" type="xsd:double"/>
+       <xsd:element name="label" type="xsd:string"/>
+       <xsd:element name="transforms" minOccurs="0" maxOccurs="unbounded" type="tns:FlowTransform"/>
+      </xsd:sequence>
+     </xsd:extension>
+    </xsd:complexContent>
+   </xsd:complexType>
+   <xsd:complexType name="FlowTransform">
+    <xsd:complexContent>
+     <xsd:extension base="tns:FlowNode">
+      <xsd:sequence>
+       <xsd:element name="dataType" minOccurs="0" type="tns:FlowDataType"/>
+       <xsd:element name="transformValues" minOccurs="0" maxOccurs="unbounded" type="tns:FlowTransformValue"/>
+      </xsd:sequence>
+     </xsd:extension>
+    </xsd:complexContent>
+   </xsd:complexType>
+   <xsd:complexType name="FlowTransformValueAction">
+    <xsd:sequence>
+     <xsd:element name="actionType" type="tns:FlowTransformValueActionType"/>
+    </xsd:sequence>
+   </xsd:complexType>
+   <xsd:complexType name="LightningComponentBundle">
+    <xsd:sequence>
+     <xsd:element name="masterLabel" type="xsd:string"/>
+    </xsd:sequence>
+   </xsd:complexType>
+   <xsd:simpleType name="FlowTransformValueActionType">
+    <xsd:restriction base="xsd:string">
+     <xsd:enumeration value="Map"/>
+     <xsd:enumeration value="Count"/>
+     <xsd:enumeration value="Sum"/>
+    </xsd:restriction>
+   </xsd:simpleType>
+   <xsd:simpleType name="FlowDataType">
+    <xsd:restriction base="xsd:string">
+     <xsd:enumeration value="Boolean"/>
+     <xsd:enumeration value="SObject"/>
+    </xsd:restriction>
+   </xsd:simpleType>
+   <xsd:simpleType name="UnrelatedType">
+    <xsd:restriction base="xsd:string">
+     <xsd:enumeration value="Other"/>
+    </xsd:restriction>
+   </xsd:simpleType>
+  </xsd:schema>
+ </types>
+</definitions>

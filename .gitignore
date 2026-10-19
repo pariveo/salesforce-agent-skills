@@ -1,9 +1,13 @@
 # macOS
 .DS_Store
 
-# Private agent workspace state
-.claude/
+# Private agent workspace state, except the maintainer skills
+.claude/*
+!.claude/skills/
 .codex/
+
+# Release review working files (reports, WSDLs, source inventories)
+.release-review/
 
 # Eval run output
 evals/results/

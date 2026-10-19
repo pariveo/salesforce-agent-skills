@@ -2,7 +2,8 @@
 // Repository smoke test: manifests parse, the Codex symlink resolves to the
 // canonical skill folder, the skill frontmatter and links hold, the example
 // flows pass the checker, the checker still catches the legacy fixture, the
-// eval suite is well-formed, and the hook speaks only on Flow metadata paths.
+// release baseline and the review scripts agree with the skill, the eval suite
+// is well-formed, and the hook speaks only on Flow metadata paths.
 // Exits non-zero on any failure so CI fails loudly.
 
 import { spawnSync } from 'node:child_process';
@@ -147,6 +148,62 @@ try {
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }
+
+// Release baseline in SKILL.md and the README
+const baseline = readJson('maintenance/release.json');
+check(/^(Spring|Summer|Winter) '\d\d$/.test(baseline.release ?? ''), `maintenance/release.json has no release like "Winter '27"`);
+check(Number.isInteger(baseline.apiVersion), 'maintenance/release.json has no integer apiVersion');
+check(/^\d{4}-\d{2}-\d{2}$/.test(baseline.reviewedOn ?? ''), 'maintenance/release.json has no reviewedOn date');
+const flat = (text) => text.replace(/\s+/g, ' ');
+const stamp = `last reviewed against ${baseline.release} (API ${baseline.apiVersion}.0)`;
+check(flat(skillMd).includes(stamp), `SKILL.md does not say it was ${stamp}`);
+check(flat(skillMd).includes(`or ${baseline.apiVersion}.0 when that is missing`), `SKILL.md step 2 does not fall back to ${baseline.apiVersion}.0`);
+check(flat(readFileSync(join(root, 'README.md'), 'utf8')).includes(stamp), `README.md does not say the skill was ${stamp}`);
+
+// Maintainer skill and its Codex symlink
+const reviewSkill = join(root, '.claude', 'skills', 'release-review');
+check(/^name: release-review$/m.test(readFileSync(join(reviewSkill, 'SKILL.md'), 'utf8')), 'release-review SKILL.md has no matching name');
+const reviewLink = join(root, '.agents/skills/release-review');
+check(existsSync(reviewLink) && resolve(dirname(reviewLink), readlinkSync(reviewLink)) === reviewSkill, '.agents/skills/release-review does not point at .claude/skills/release-review');
+
+// Review scripts
+const runScript = (script, ...args) => {
+  const result = spawnSync(process.execPath, [join(root, 'scripts', script), ...args], { encoding: 'utf8' });
+  try {
+    return { status: result.status, out: JSON.parse(result.stdout) };
+  } catch {
+    return { status: result.status, out: null };
+  }
+};
+const wsdl = join(root, 'scripts', 'fixtures', 'metadata-flow-sample.wsdl');
+const parsed = runScript('diff-flow-schema.mjs', wsdl, '--snapshot');
+check(parsed.status === 0 && parsed.out?.types?.Flow && parsed.out.types.Metadata, 'diff-flow-schema does not parse the fixture WSDL');
+if (parsed.out?.types?.Flow) {
+  const older = structuredClone(parsed.out);
+  delete older.types.Flow.fields.transforms;
+  older.types.FlowTransform.fields.dataType = 'String';
+  older.enums.FlowTransformValueActionType.push('Join');
+  const schemaDir = mkdtempSync(join(tmpdir(), 'flow-schema-'));
+  try {
+    writeFileSync(join(schemaDir, 'old.json'), JSON.stringify(older));
+    const d = runScript('diff-flow-schema.mjs', wsdl, '--api', '68', '--against', join(schemaDir, 'old.json'), '--json')?.out?.schema;
+    check(d?.types.changed.Flow?.added.includes('transforms: FlowTransform[]'), 'diff-flow-schema misses an added field');
+    check(d?.types.changed.FlowTransform?.retyped.includes('dataType: String -> FlowDataType'), 'diff-flow-schema misses a retyped field');
+    check(d?.enums.changed.FlowTransformValueActionType?.removed.includes('Join'), 'diff-flow-schema misses a removed enumeration value');
+  } finally {
+    rmSync(schemaDir, { recursive: true, force: true });
+  }
+}
+const schemaSnapshots = existsSync(join(root, 'maintenance', 'flow-schema'))
+  ? readdirSync(join(root, 'maintenance', 'flow-schema')).filter((f) => /^\d+\.json$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b))
+  : [];
+if (schemaSnapshots.length) {
+  const newest = schemaSnapshots.at(-1);
+  const drift = runScript('diff-flow-schema.mjs', join(root, 'maintenance', 'flow-schema', newest), '--json').out?.checkerDrift;
+  check(drift && Object.keys(drift).length === 0, `check-flow.mjs tag lists differ from maintenance/flow-schema/${newest}; run diff-flow-schema.mjs on it`);
+}
+const inventory = runScript('source-inventory.mjs', '--json');
+check(inventory.status === 0 && inventory.out?.sources.length > 0, 'source-inventory finds no sources');
 
 // Eval suite: every case has a prompt and graders with a type
 const evalsDir = join(root, 'evals');
