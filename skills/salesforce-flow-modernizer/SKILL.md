@@ -203,6 +203,9 @@ subflow for logic with one caller.
 
 ## Verify before asserting
 
+- Currency: this skill was last reviewed against Summer '26 (API 67.0). On an
+  org with a higher API version, the table can miss newer elements. Say so
+  before calling a requirement unsupported, and check that release's notes.
 - Availability: org API version against the table. Treat licence-gated
   features (Agentforce, Einstein, Data 360, some orchestration editions) as
   assumptions until the org confirms them, and say so.

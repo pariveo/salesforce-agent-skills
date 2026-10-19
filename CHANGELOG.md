@@ -15,6 +15,16 @@ version instead.
 
 ## [Unreleased]
 
+### Added
+
+- **The skill names the release it was last reviewed against**, Summer '26
+  (API 67.0). On an org with a newer API version, it now says the decision
+  table can miss newer elements before calling a requirement unsupported, and
+  checks that release's notes.
+- A release review for maintainers: the `release-review` skill, a Flow schema
+  diff against the Metadata WSDL, a source inventory, and example validation
+  at a new API version. CONTRIBUTING.md describes it.
+
 ## [0.3.1] - 2026-10-17
 
 The first public release. The skill's decision table, escape conditions,

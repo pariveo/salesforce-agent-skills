@@ -17,7 +17,7 @@ Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## What you need
 
-- Node.js. The checker, the hook and both maintainer scripts use only Node's
+- Node.js. The checker, the hook and the maintainer scripts use only Node's
   standard library, so there's nothing to install.
 - Salesforce CLI and a scratch org, if you change anything under
   `skills/salesforce-flow-modernizer/examples/`.
@@ -53,6 +53,36 @@ The script runs a check-only deployment, so it leaves nothing behind in the
 org. Keep the `Verified:` line in the example's header comment true. It names
 the org API version the example was deployed on, and whether it also ran
 against data.
+
+## Release reviews
+
+Each Salesforce release can add a Flow element, change a limit, move a help
+page or retire a feature, and the skill states all of these. A release review
+checks the skill against the release and the current documentation, and
+reports what has to change before anything does.
+
+Run one when a release's preview release notes are published, and again at
+general availability if the notes changed in between. In Claude Code or
+Codex, ask for the `release-review` skill. It lives in `.claude/skills/`, and
+Codex finds it through `.agents/skills/`. It is a maintainer skill and isn't
+part of the plugin. It walks through these steps:
+
+- `maintenance/release.json` names the release the skill was last reviewed
+  against. `SKILL.md` and the README state the same release, and the smoke
+  test fails when they disagree.
+- The release notes of every release since then, read in a browser.
+- `node scripts/diff-flow-schema.mjs <metadata.wsdl> --api <version>`
+  compares the Flow part of an org's Metadata WSDL with the snapshot in
+  `maintenance/flow-schema/`, and reports where the checker's tag lists
+  differ from the schema.
+- `node scripts/source-inventory.mjs` lists every source the skill cites,
+  with each claim that cites it, and every "Not verified" mark.
+- `node scripts/validate-examples.mjs --target-org <alias> --api <version>`
+  deploy-validates the examples raised to the new API version.
+
+The review writes its report to `.release-review/`, which git ignores. Each
+finding that needs a change becomes its own pull request. The last one moves
+the baseline in `maintenance/release.json`.
 
 ## Before you open a pull request
 

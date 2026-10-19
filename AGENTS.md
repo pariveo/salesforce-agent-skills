@@ -48,6 +48,14 @@ on help.salesforce.com and developer.salesforce.com.
 - The hook script needs Node.js on the PATH. It's advisory, which means it
   adds a reminder to the session and never blocks a tool call.
 
+## Keeping the skill current
+
+To check the skill against a new Salesforce release, use the maintainer skill
+`release-review` in `.claude/skills/` (Codex finds it through
+`.agents/skills/`). It doesn't ship in the plugin. `maintenance/release.json`
+records the release the skill was last reviewed against, and the
+"Release reviews" section of CONTRIBUTING.md explains the scripts it uses.
+
 ## Editing this repository
 
 Follow [CONTRIBUTING.md](CONTRIBUTING.md). It holds the rules for content and
