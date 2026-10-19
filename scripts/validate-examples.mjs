@@ -5,9 +5,7 @@
 //   node scripts/validate-examples.mjs --target-org <scratch-org-alias> [--api <version>]
 //
 // The org is never taken from the CLI default. Use a scratch org or a sandbox.
-// --api deploys copies of the examples raised to that apiVersion, which a
-// release review uses to check them on the new release before their
-// "Verified:" lines change. Without it, the examples deploy as written.
+// --api raises the deployed copies to that apiVersion, to check them on a new release.
 
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';

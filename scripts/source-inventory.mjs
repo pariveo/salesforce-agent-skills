@@ -1,12 +1,8 @@
 #!/usr/bin/env node
-// Lists every source the skill cites, with each claim that cites it, plus the
-// claims marked "Not verified" and the releases the skill names. A release
-// review re-opens each source once and checks every claim listed under it.
+// Lists every source the skill cites with the claims that cite it, plus the
+// "Not verified" marks and the releases named, as a release review checklist.
 //
 //   node scripts/source-inventory.mjs [--json]
-//
-// Reads SKILL.md, references/*.md and the header comments of the example
-// flows. Prints a Markdown checklist, or JSON with --json.
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -22,9 +18,8 @@ const files = [
   ...readdirSync(join(skillDir, 'examples', 'flows')).sort().map((f) => join(skillDir, 'examples', 'flows', f)),
 ];
 
-// The block a line belongs to (its paragraph, list item or table row),
 const START = /^\s*(?:[-*] |\d+\. |\||#|```)/;
-// cut to about 280 characters around `needle` when it is long.
+// The paragraph, list item or table row around a line, cut to 280 characters around `needle`
 function block(lines, index, needle) {
   let first = index;
   while (first > 0 && lines[first - 1].trim() && !START.test(lines[first]) && !lines[first - 1].trim().startsWith('|')) first--;

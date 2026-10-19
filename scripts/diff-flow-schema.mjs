@@ -1,18 +1,10 @@
 #!/usr/bin/env node
-// Compares the Flow part of a Metadata API WSDL with a saved snapshot, so a
-// release review starts from what the schema actually added or removed, and
-// reports where the checker's tag lists have drifted from the schema.
-// Maintainers run it during a release review:
+// Diffs the Flow types of a Metadata WSDL against the checker's tag lists and
+// against the newest snapshot in maintenance/flow-schema/ below --api. The
+// WSDL comes from an org on the release under review (Setup, API, Generate
+// Metadata WSDL).
 //
-//   node scripts/diff-flow-schema.mjs <metadata.wsdl | snapshot.json> [--api <n>] [--against <snapshot.json>] [--write] [--json]
-//
-// Without --against, the baseline is the highest snapshot in
-// maintenance/flow-schema/ below --api. With --write, the input is saved as
-// maintenance/flow-schema/<api>.json. --snapshot prints the parsed snapshot.
-//
-// The WSDL comes from an org on the release under review: Setup, API,
-// Generate Metadata WSDL. Snapshots hold every complex type whose name starts
-// with "Flow", the base types they extend, and the enumerations they use.
+//   node scripts/diff-flow-schema.mjs <metadata.wsdl | snapshot.json> [--api <n>] [--against <snapshot.json>] [--write] [--json] [--snapshot]
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -21,8 +13,6 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const snapshotDir = join(root, 'maintenance', 'flow-schema');
 const checkerPath = join(root, 'skills', 'salesforce-flow-modernizer', 'scripts', 'check-flow.mjs');
-
-// ---------- WSDL to snapshot ----------
 
 const local = (qname) => qname.replace(/^[\w.-]+:/, '');
 const attrs = (source) => Object.fromEntries([...source.matchAll(/([\w:.-]+)\s*=\s*"([^"]*)"/g)].map(([, k, v]) => [k, v]));
@@ -43,7 +33,7 @@ function parseWsdl(source) {
     simple.set(name, [...body.matchAll(/<(?:\w+:)?enumeration\s+value="([^"]*)"/g)].map(([, v]) => v));
   }
 
-  // Flow* types, plus the base types they extend, so inherited fields resolve
+  // Keep base types too, so inherited fields such as Metadata.fullName resolve
   const keep = new Set([...complex.keys()].filter((name) => name.startsWith('Flow')));
   for (const name of [...keep]) {
     for (let base = complex.get(name).base; base && complex.has(base) && !keep.has(base); base = complex.get(base).base) keep.add(base);
@@ -58,14 +48,11 @@ function parseWsdl(source) {
 
 const sortKeys = (object) => Object.fromEntries(Object.entries(object).sort(([a], [b]) => a.localeCompare(b)));
 
-// A type's own fields and every field it inherits
 function allFields(schema, name) {
   const fields = [];
   for (let type = schema.types[name]; type; type = schema.types[type.base]) fields.push(...Object.keys(type.fields));
   return fields;
 }
-
-// ---------- baseline ----------
 
 function snapshots() {
   if (!existsSync(snapshotDir)) return [];
@@ -76,7 +63,7 @@ function snapshots() {
     .sort((a, b) => a.api - b.api);
 }
 
-// The checker's tag lists, read from its source so the checker stays standalone.
+// Parsed from source, because importing the checker would run its CLI
 function checkerLists() {
   const source = readFileSync(checkerPath, 'utf8');
   const list = (name) => {
@@ -85,8 +72,6 @@ function checkerLists() {
   };
   return { FLOW_FIELDS: list('FLOW_FIELDS'), VALUE_FIELDS: list('VALUE_FIELDS') };
 }
-
-// ---------- diff ----------
 
 function diff(from, to) {
   const names = (o) => Object.keys(o ?? {});
@@ -127,8 +112,6 @@ function checkerDrift(schema) {
   }
   return drift;
 }
-
-// ---------- CLI ----------
 
 const args = process.argv.slice(2);
 const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);

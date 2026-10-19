@@ -149,7 +149,7 @@ try {
   rmSync(scratch, { recursive: true, force: true });
 }
 
-// Release baseline: the skill, the README and maintenance/release.json name the same review
+// Release baseline in SKILL.md and the README
 const baseline = readJson('maintenance/release.json');
 check(/^(Spring|Summer|Winter) '\d\d$/.test(baseline.release ?? ''), `maintenance/release.json has no release like "Winter '27"`);
 check(Number.isInteger(baseline.apiVersion), 'maintenance/release.json has no integer apiVersion');
@@ -160,13 +160,13 @@ check(flat(skillMd).includes(stamp), `SKILL.md does not say it was ${stamp}`);
 check(flat(skillMd).includes(`or ${baseline.apiVersion}.0 when that is missing`), `SKILL.md step 2 does not fall back to ${baseline.apiVersion}.0`);
 check(flat(readFileSync(join(root, 'README.md'), 'utf8')).includes(stamp), `README.md does not say the skill was ${stamp}`);
 
-// Maintainer skill, discovered by Claude Code in .claude/skills/ and by Codex through the symlink
+// Maintainer skill and its Codex symlink
 const reviewSkill = join(root, '.claude', 'skills', 'release-review');
 check(/^name: release-review$/m.test(readFileSync(join(reviewSkill, 'SKILL.md'), 'utf8')), 'release-review SKILL.md has no matching name');
 const reviewLink = join(root, '.agents/skills/release-review');
 check(existsSync(reviewLink) && resolve(dirname(reviewLink), readlinkSync(reviewLink)) === reviewSkill, '.agents/skills/release-review does not point at .claude/skills/release-review');
 
-// Review scripts: the schema diff finds planted changes, the inventory reads every source
+// Review scripts
 const runScript = (script, ...args) => {
   const result = spawnSync(process.execPath, [join(root, 'scripts', script), ...args], { encoding: 'utf8' });
   try {
