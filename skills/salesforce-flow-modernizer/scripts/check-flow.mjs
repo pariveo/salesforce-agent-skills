@@ -49,20 +49,24 @@ const ELEMENT_TYPES = [
   'decisions', 'loops', 'recordCreates', 'recordDeletes', 'recordLookups', 'recordRollbacks',
   'recordUpdates', 'screens', 'subflows', 'transforms', 'waits', 'orchestratedStages', 'steps',
 ];
-// From the Metadata API Developer Guide, Flow and FlowElementReferenceOrValue, API 68.0.
+// Flow and FlowElementReferenceOrValue in the API 68.0 Metadata WSDL. `ends` and the other WSDL-only
+// fields aren't in the Developer Guide yet; `segment` is in the guide (reserved) but not the WSDL.
 const FLOW_FIELDS = new Set([
-  'actionCalls', 'apexPluginCalls', 'apiVersion', 'areMetricsLoggedToDataCloud', 'assignments', 'choices',
-  'collectionFilterCriteria', 'collectionProcessors', 'constants', 'customErrors', 'customProperties', 'decisions',
-  'description', 'dynamicChoiceSets', 'environments', 'exitRules', 'experiments', 'formulas', 'fullName', 'groups',
-  'interviewLabel', 'isAdditionalPermissionRequiredToRun', 'isTemplate', 'label', 'loops', 'migratedFromWorkflowRuleName',
-  'orchestratedStages', 'processMetadataValues', 'processType', 'recordCreates', 'recordDeletes', 'recordLookups',
-  'recordRollbacks', 'recordUpdates', 'runInMode', 'screens', 'segment', 'stages', 'start', 'startElementReference',
-  'status', 'steps', 'subflows', 'textTemplates', 'timeZoneSidKey', 'transforms', 'triggerOrder', 'variables', 'waits',
+  'accessType', 'actionCalls', 'apexPluginCalls', 'apiVersion', 'areMetricsLoggedToDataCloud', 'assignments',
+  'choices', 'collectionFilterCriteria', 'collectionProcessors', 'constants', 'customErrors', 'customProperties',
+  'dataLookups', 'dataSpace', 'decisions', 'description', 'dynamicChoiceSets', 'ends', 'environments', 'exitRules',
+  'experiments', 'formulas', 'fullName', 'groups', 'interviewLabel', 'isAdditionalPermissionRequiredToRun',
+  'isOverridable', 'isTemplate', 'label', 'loops', 'migratedFromWorkflowRuleName', 'orchestratedStages',
+  'overriddenFlow', 'processMetadataValues', 'processType', 'recordCreates', 'recordDeletes', 'recordLookups',
+  'recordRollbacks', 'recordUpdates', 'runInMode', 'screens', 'segment', 'sourceTemplate', 'stages', 'start',
+  'startElementReference', 'status', 'steps', 'subflows', 'textTemplates', 'timeZoneSidKey', 'transforms',
+  'triggerOrder', 'variables', 'waits',
 ]);
 const VALUE_FIELDS = new Set([
-  'apexValue', 'booleanValue', 'complexValue', 'complexValueType', 'dateTimeValue', 'dateValue', 'elementReference',
-  'formulaDataType', 'formulaExpression', 'numberValue', 'setupReference', 'setupReferenceType', 'sobjectValue',
-  'stringValue', 'transform', 'transformValueReference',
+  'apexValue', 'booleanValue', 'collectionElements', 'complexValue', 'complexValueType', 'dateTimeValue', 'dateValue',
+  'elementReference', 'formulaDataType', 'formulaExpression', 'inputConfiguratorMode', 'isReverseValueMapping',
+  'numberValue', 'setupReference', 'setupReferenceType', 'sobjectValue', 'stringValue', 'timeValue', 'transform',
+  'transformValueReference', 'valueMapName',
 ]);
 const DML = new Set(['recordCreates', 'recordUpdates', 'recordDeletes']);
 const FAULTABLE = new Set(['recordCreates', 'recordUpdates', 'recordDeletes', 'recordLookups', 'actionCalls']);
@@ -263,11 +267,17 @@ function check(m, { api }) {
     }
   }
 
-  // Tag names against the Metadata API reference (Flow, FlowElementReferenceOrValue; API 68.0)
+  // Tag names against the Metadata API schema (Flow, FlowElementReferenceOrValue; API 68.0)
   for (const child of m.flow.children) {
     if (!FLOW_FIELDS.has(child.name)) {
       report('WARNING', 'FLOW018', child.name, `<${child.name}> is not a documented Flow field. Check the tag name against the examples before deploying.`);
     }
+  }
+  // End elements (API 68.0) deploy only in Auto-Layout
+  const end = kid(m.flow, 'ends');
+  const canvas = kids(m.flow, 'processMetadataValues').find((p) => text(p, 'name') === 'CanvasMode');
+  if (end && text(kid(canvas, 'value'), 'stringValue') !== 'AUTO_LAYOUT_CANVAS') {
+    report('ERROR', 'FLOW019', text(end, 'name'), 'End elements need Auto-Layout (deploy fails: "Free-Form canvas mode doesn\'t support End elements"). Set processMetadataValues CanvasMode to AUTO_LAYOUT_CANVAS, or remove the <ends> elements.');
   }
   const scanValues = (node, path) => {
     for (const c of node.children) {

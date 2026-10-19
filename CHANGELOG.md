@@ -24,6 +24,15 @@ version instead.
 - A release review for maintainers: the `release-review` skill, a Flow schema
   diff against the Metadata WSDL, a source inventory, and example validation
   at a new API version. CONTRIBUTING.md describes it.
+- Checker rule FLOW019: an `<ends>` element in a flow that isn't in
+  Auto-Layout is an error, because the deploy rejects it.
+
+### Fixed
+
+- **The checker knows the Flow fields of API 68.0 (Winter '27).** Flow
+  Builder now saves end elements as `<ends>`, and the checker warned
+  (FLOW018) on every such flow. It also took `<timeValue>` and four other
+  value tags for invalid and reported a deploy error that doesn't happen.
 
 ## [0.3.1] - 2026-10-17
 
