@@ -137,13 +137,34 @@ try {
       '<value><formulaValue>1</formulaValue></value></assignmentItems></assignments>',
       '<label>x</label><processType>AutoLaunchedFlow</processType></Flow>',
     ].join(''),
+    'Auto_Layout_Ends.flow-meta.xml': [
+      '<Flow xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>68.0</apiVersion>',
+      '<assignments><name>A</name><label>A</label><locationX>0</locationX><locationY>0</locationY><group>G</group>',
+      '<assignmentItems><assignToReference>t</assignToReference><operator>Assign</operator>',
+      '<value><timeValue>09:00:00.000Z</timeValue></value></assignmentItems>',
+      '<connector><targetReference>End_A</targetReference></connector></assignments>',
+      '<ends><name>End_A</name><label>End</label><locationX>0</locationX><locationY>0</locationY></ends>',
+      '<label>x</label>',
+      '<processMetadataValues><name>CanvasMode</name><value><stringValue>AUTO_LAYOUT_CANVAS</stringValue></value></processMetadataValues>',
+      '<processType>AutoLaunchedFlow</processType>',
+      '<start><locationX>0</locationX><locationY>0</locationY><connector><targetReference>A</targetReference></connector></start></Flow>',
+    ].join(''),
+    'Free_Form_Ends.flow-meta.xml': [
+      '<Flow xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>68.0</apiVersion>',
+      '<ends><name>End_A</name><label>End</label><locationX>0</locationX><locationY>0</locationY></ends>',
+      '<label>x</label><processType>AutoLaunchedFlow</processType>',
+      '<start><locationX>0</locationX><locationY>0</locationY><connector><targetReference>End_A</targetReference></connector></start></Flow>',
+    ].join(''),
   };
-  const expected = { 'Split_Groups.flow-meta.xml': 'FLOW016', 'Before_Save_Transform.flow-meta.xml': 'FLOW006', 'Async_Label.flow-meta.xml': 'FLOW007', 'Split_Join.flow-meta.xml': 'FLOW017', 'Invented_Tag.flow-meta.xml': 'FLOW018' };
+  // Shapes Flow Builder saves from Winter '27 on, which must not trip the tag check
+  const absent = { 'Auto_Layout_Ends.flow-meta.xml': ['FLOW018', 'FLOW019'] };
+  const expected = { 'Split_Groups.flow-meta.xml': 'FLOW016', 'Before_Save_Transform.flow-meta.xml': 'FLOW006', 'Async_Label.flow-meta.xml': 'FLOW007', 'Split_Join.flow-meta.xml': 'FLOW017', 'Invented_Tag.flow-meta.xml': 'FLOW018', 'Free_Form_Ends.flow-meta.xml': 'FLOW019' };
   for (const [file, xml] of Object.entries(shapes)) writeFileSync(join(scratch, file), xml);
   const shapeRun = runChecker(scratch);
   for (const r of shapeRun.results) {
     const name = r.file.split(/[\\/]/).pop();
-    check(r.findings.some((f) => f.code === expected[name]), `check-flow misses ${expected[name]} on ${name}`);
+    if (absent[name]) for (const code of absent[name]) check(!r.findings.some((f) => f.code === code), `check-flow reports ${code} on ${name}`);
+    else check(r.findings.some((f) => f.code === expected[name]), `check-flow misses ${expected[name]} on ${name}`);
   }
 } finally {
   rmSync(scratch, { recursive: true, force: true });
