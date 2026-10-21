@@ -15,6 +15,8 @@ version instead.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-21
+
 ### Added
 
 - **The skill names the release it was last reviewed against**, Summer '26
@@ -24,6 +26,8 @@ version instead.
 - A release review for maintainers: the `release-review` skill, a Flow schema
   diff against the Metadata WSDL, a source inventory, and example validation
   at a new API version. CONTRIBUTING.md describes it.
+- A release script for maintainers, `scripts/release.mjs`, which sets the
+  version in both plugin manifests and dates the changelog section.
 - Checker rule FLOW019: an `<ends>` element in a flow that isn't in
   Auto-Layout is an error, because the deploy rejects it.
 - `references/collections.md` notes the Collection Filter Criteria resource
@@ -219,5 +223,6 @@ and a checker for its own output.
   from `automation-flow-generate` in Salesforce's own Claude Code plugin,
   and when to use which.
 
-[Unreleased]: https://github.com/pariveo/salesforce-agent-skills/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/pariveo/salesforce-agent-skills/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/pariveo/salesforce-agent-skills/releases/tag/v0.4.0
 [0.3.1]: https://github.com/pariveo/salesforce-agent-skills/releases/tag/v0.3.1

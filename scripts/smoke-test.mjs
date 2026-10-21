@@ -3,7 +3,7 @@
 // lists what it checks. Exits non-zero on any failure so CI fails loudly.
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -245,6 +245,34 @@ if (process.platform !== 'win32') {
     check(flag('--target-org') === 'smoke-org', 'validate-examples does not pass --target-org to sf');
   } finally {
     rmSync(stubDir, { recursive: true, force: true });
+  }
+}
+
+// Release script, run on a copy so the real manifests and changelog stay put.
+// The copy gets an [Unreleased] entry, since right after a release it has none.
+{
+  const copy = mkdtempSync(join(tmpdir(), 'release-'));
+  try {
+    for (const path of ['scripts/release.mjs', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'CHANGELOG.md']) {
+      mkdirSync(dirname(join(copy, path)), { recursive: true });
+      copyFileSync(join(root, path), join(copy, path));
+    }
+    const copied = (path) => readFileSync(join(copy, path), 'utf8');
+    writeFileSync(join(copy, 'CHANGELOG.md'), copied('CHANGELOG.md').replace('## [Unreleased]\n', '## [Unreleased]\n\n### Added\n\n- Smoke test entry.\n'));
+    const release = (...args) => spawnSync(process.execPath, [join(copy, 'scripts', 'release.mjs'), ...args], { encoding: 'utf8' });
+
+    check(/not newer/.test(release(claudePlugin.version).stderr), 'release.mjs accepts a version that is not newer');
+    const run = release('99.0.0', '--date', '2099-01-01');
+    check(run.status === 0, `release.mjs failed: ${run.stderr.trim()}`);
+    for (const path of ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json']) {
+      check(JSON.parse(copied(path)).version === '99.0.0', `release.mjs does not set the version in ${path}`);
+    }
+    const released = copied('CHANGELOG.md');
+    check(released.includes('## [Unreleased]\n\n## [99.0.0] - 2099-01-01\n\n### Added\n\n- Smoke test entry.\n'), 'release.mjs does not move the [Unreleased] entries under 99.0.0');
+    check(/^\[Unreleased\]: \S+\/compare\/v99\.0\.0\.\.\.HEAD\n\[99\.0\.0\]: \S+\/releases\/tag\/v99\.0\.0$/m.test(released), 'release.mjs does not update the changelog links');
+    check(/nothing under/.test(release('99.0.1').stderr), 'release.mjs releases an empty [Unreleased]');
+  } finally {
+    rmSync(copy, { recursive: true, force: true });
   }
 }
 
