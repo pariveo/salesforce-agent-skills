@@ -132,8 +132,9 @@ node scripts/smoke-test.mjs
 It checks the manifests, the Codex symlink, the skill's frontmatter and links,
 the examples against the checker, the checker against the legacy fixture, the
 release baseline and the review scripts against the skill, the deploy command
-`validate-examples.mjs` runs, the eval suite's shape, the hook's behaviour,
-and the code comments. CI runs the same script.
+`validate-examples.mjs` runs, the release script on a copy of the
+manifests and changelog, the eval suite's shape, the hook's behaviour, and
+the code comments. CI runs the same script.
 
 If you changed `SKILL.md` or a reference, consider running the eval suite as
 well. It needs a Claude Code build with `plugin eval`, and
@@ -151,6 +152,33 @@ well. It needs a Claude Code build with `plugin eval`, and
   will notice the change. The changelog says what counts as breaking.
 - Fill in the pull request template: what changed, the deploy result for any
   example you touched, and the smoke test result.
+
+## Releasing
+
+A change to the skill reaches users only through a release. Claude Code
+keeps an installed plugin on the `version` in its manifest until that version
+changes
+([plugin manifest reference](https://code.claude.com/docs/en/plugins-reference#version)),
+so merged changes stay invisible to existing installs until the next release.
+
+Choose the version from the `[Unreleased]` entries and the rules at the top
+of [CHANGELOG.md](CHANGELOG.md), then run:
+
+```bash
+node scripts/release.mjs <version>
+```
+
+It sets the version in `.claude-plugin/plugin.json` and
+`.codex-plugin/plugin.json`, moves the `[Unreleased]` entries under a heading
+for that version with today's date, and updates the comparison links at the
+bottom of the changelog. `--date YYYY-MM-DD` sets another date. It refuses a
+version that isn't newer, and an empty `[Unreleased]`.
+
+Commit the result as `chore(plugin): release <version>`. After the pull
+request merges, tag the merge commit `v<version>` and publish a GitHub release
+from the tag with that version's changelog section.
+`claude plugin tag` would name the tag `<plugin>--v<version>` instead, so
+don't use it here.
 
 By contributing you agree that your contribution is licensed under the
 [MIT licence](LICENSE) of this repository.

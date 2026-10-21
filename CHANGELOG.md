@@ -24,6 +24,8 @@ version instead.
 - A release review for maintainers: the `release-review` skill, a Flow schema
   diff against the Metadata WSDL, a source inventory, and example validation
   at a new API version. CONTRIBUTING.md describes it.
+- A release script for maintainers, `scripts/release.mjs`, which sets the
+  version in both plugin manifests and dates the changelog section.
 - Checker rule FLOW019: an `<ends>` element in a flow that isn't in
   Auto-Layout is an error, because the deploy rejects it.
 - `references/collections.md` notes the Collection Filter Criteria resource
