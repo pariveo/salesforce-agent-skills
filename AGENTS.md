@@ -58,8 +58,8 @@ records the release the skill was last reviewed against, and the
 
 ## Editing this repository
 
-Follow [CONTRIBUTING.md](CONTRIBUTING.md). It holds the rules for content and
-examples, the scratch-org deploy every example change needs, the smoke test
-to run before a commit, and the commit and pull request conventions. The
-behavioural eval suite lives in `evals/`, and
+Follow [CONTRIBUTING.md](CONTRIBUTING.md). It holds the rules for content,
+code comments and examples, the scratch-org deploy every example change
+needs, the smoke test to run before a commit, and the commit and pull request
+conventions. The behavioural eval suite lives in `evals/`, and
 [evals/README.md](evals/README.md) explains it.
