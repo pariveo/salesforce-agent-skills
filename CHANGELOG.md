@@ -26,6 +26,8 @@ version instead.
   at a new API version. CONTRIBUTING.md describes it.
 - Checker rule FLOW019: an `<ends>` element in a flow that isn't in
   Auto-Layout is an error, because the deploy rejects it.
+- `references/collections.md` notes the Collection Filter Criteria resource
+  of Winter '27, and why the decision table doesn't recommend it yet.
 
 ### Fixed
 
