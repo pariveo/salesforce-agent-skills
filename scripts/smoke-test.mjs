@@ -225,6 +225,29 @@ const contributingLinks = readFileSync(join(root, 'CONTRIBUTING.md'), 'utf8').ma
 const maintainerCitations = inventory.out?.maintainerSources?.flatMap((s) => s.citations.filter((c) => c.file === 'CONTRIBUTING.md')) ?? [];
 check(maintainerCitations.length === contributingLinks, `source-inventory lists ${maintainerCitations.length} of the ${contributingLinks} official links in CONTRIBUTING.md`);
 
+// validate-examples must deploy without running the org's Apex tests. A stub
+// `sf` on PATH prints the arguments it was called with.
+if (process.platform !== 'win32') {
+  const stubDir = mkdtempSync(join(tmpdir(), 'sf-stub-'));
+  try {
+    writeFileSync(join(stubDir, 'sf'), '#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify(process.argv.slice(2)));\n', { mode: 0o755 });
+    const result = spawnSync(process.execPath, [join(root, 'scripts', 'validate-examples.mjs'), '--target-org', 'smoke-org'], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${stubDir}:${process.env.PATH}` },
+    });
+    let sfArgs = [];
+    try {
+      sfArgs = JSON.parse(result.stdout);
+    } catch {}
+    const flag = (name) => sfArgs[sfArgs.indexOf(name) + 1];
+    check(result.status === 0 && sfArgs.slice(0, 3).join(' ') === 'project deploy start', `validate-examples does not run "sf project deploy start" (ran: sf ${sfArgs.join(' ')})`);
+    check(sfArgs.includes('--dry-run') && flag('--test-level') === 'NoTestRun', 'validate-examples does not dry-run the deploy with --test-level NoTestRun');
+    check(flag('--target-org') === 'smoke-org', 'validate-examples does not pass --target-org to sf');
+  } finally {
+    rmSync(stubDir, { recursive: true, force: true });
+  }
+}
+
 // Eval suite: every case has a prompt and graders with a type
 const evalsDir = join(root, 'evals');
 const cases = readdirSync(evalsDir, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'results');

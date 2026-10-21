@@ -35,6 +35,10 @@ version instead.
   Builder now saves end elements as `<ends>`, and the checker warned
   (FLOW018) on every such flow. It also took `<timeValue>` and four other
   value tags for invalid and reported a deploy error that doesn't happen.
+- `scripts/validate-examples.mjs` no longer fails on an org's own uncovered
+  Apex. It ran `sf project deploy validate`, which always runs Apex tests, so
+  an org whose own trigger had no coverage reported "Failed" while every
+  example deployed. It now runs a dry-run deploy without tests.
 
 ## [0.3.1] - 2026-10-17
 

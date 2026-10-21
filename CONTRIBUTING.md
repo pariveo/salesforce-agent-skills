@@ -107,7 +107,15 @@ part of the plugin. It walks through these steps:
   pages this file cites for the maintainer scripts. This file's other links
   back no platform claim, so the inventory leaves them out.
 - `node scripts/validate-examples.mjs --target-org <alias> --api <version>`
-  deploy-validates the examples raised to the new API version.
+  deploy-validates the examples raised to the new API version. It runs
+  `sf project deploy start --dry-run --test-level NoTestRun`, so the result
+  depends only on the examples and not on the org's own Apex test coverage.
+  `sf project deploy validate` always runs Apex tests, by default every local
+  test, and fails on an org with uncovered Apex even when every example
+  deploys. NoTestRun applies only to development environments such as sandbox,
+  Developer Edition or trial orgs, so name a scratch org or a sandbox
+  ([project deploy start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html),
+  [project deploy validate](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html)).
 
 The review writes its report to `.release-review/`, which git ignores. Each
 finding that needs a change becomes its own pull request. The last one moves
@@ -123,8 +131,9 @@ node scripts/smoke-test.mjs
 
 It checks the manifests, the Codex symlink, the skill's frontmatter and links,
 the examples against the checker, the checker against the legacy fixture, the
-release baseline and the review scripts against the skill, the eval suite's
-shape, the hook's behaviour, and the code comments. CI runs the same script.
+release baseline and the review scripts against the skill, the deploy command
+`validate-examples.mjs` runs, the eval suite's shape, the hook's behaviour,
+and the code comments. CI runs the same script.
 
 If you changed `SKILL.md` or a reference, consider running the eval suite as
 well. It needs a Claude Code build with `plugin eval`, and

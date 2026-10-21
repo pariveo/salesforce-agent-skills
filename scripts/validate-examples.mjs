@@ -47,7 +47,11 @@ try {
   );
   const result = spawnSync(
     'sf',
-    ['project', 'deploy', 'validate', '--source-dir', 'force-app', '--target-org', targetOrg, '--wait', '30'],
+    // Not `deploy validate`, which always runs the org's Apex tests. CONTRIBUTING.md, "Release reviews", says why.
+    [
+      'project', 'deploy', 'start', '--dry-run', '--test-level', 'NoTestRun',
+      '--source-dir', 'force-app', '--target-org', targetOrg, '--wait', '30',
+    ],
     { cwd: project, stdio: 'inherit' },
   );
   process.exitCode = result.status ?? 1;
