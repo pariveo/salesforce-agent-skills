@@ -1,11 +1,6 @@
 #!/usr/bin/env node
-// Repository smoke test: manifests parse, the Codex symlink resolves to the
-// canonical skill folder, the skill frontmatter and links hold, the example
-// flows pass the checker, the checker still catches the legacy fixture, the
-// release baseline and the review scripts agree with the skill, example
-// validation deploys without running Apex tests, the eval suite
-// is well-formed, and the hook speaks only on Flow metadata paths.
-// Exits non-zero on any failure so CI fails loudly.
+// Repository smoke test. CONTRIBUTING.md, "Before you open a pull request",
+// lists what it checks. Exits non-zero on any failure so CI fails loudly.
 
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
@@ -285,6 +280,23 @@ const malformed = spawnSync(process.execPath, [join(root, 'hooks/sfdx-skill-guar
   encoding: 'utf8',
 });
 check(malformed.status === 0 && malformed.stdout === '', 'hook does not stay silent on malformed input');
+
+// Code comments, per CONTRIBUTING.md. Blank lines neither break nor extend a block.
+const tracked = spawnSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' });
+check(tracked.status === 0, 'git ls-files failed, so code comments went unchecked');
+const COMMENT_LINE = /^\s*(\/\/|\/\*|\*|#(?!!))/;
+for (const file of (tracked.stdout ?? '').split('\0').filter((f) => /\.(mjs|js|sh)$/.test(f) && existsSync(join(root, f)))) {
+  let block = 0;
+  let longest = 0;
+  readFileSync(join(root, file), 'utf8').split('\n').forEach((line, i) => {
+    const whole = COMMENT_LINE.test(line);
+    const comment = whole ? line : (line.match(/\s\/\/\s.*$/)?.[0] ?? '');
+    if (whole) longest = Math.max(longest, ++block);
+    else if (line.trim()) block = 0;
+    check(!/https?:\/\//.test(comment), `${file}:${i + 1} has a link in a code comment; cite it in Markdown`);
+  });
+  check(longest <= 8, `${file} has a ${longest}-line comment block (limit 8)`);
+}
 
 if (failures.length > 0) {
   for (const message of failures) console.error(`FAIL ${message}`);

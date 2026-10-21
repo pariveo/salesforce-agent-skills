@@ -39,6 +39,32 @@ turns into a wrong flow.
 - `references/org-conventions.md` ships with every slot unset. Fill it in
   your fork or your own project, never here.
 
+## Code comments
+
+These rules cover every `.mjs`, `.js` and `.sh` file. The header comment of
+an example flow is content, so "Changing an example" below covers it instead.
+
+- Default to no comment. Names say what the code does, so a comment says
+  only why. That means a platform behaviour, a rejected alternative or a
+  choice a later edit would otherwise undo, in one or two lines.
+- A file opens with a short header that says what it does and how to run it.
+  The reasoning behind its design belongs in Markdown.
+- No links in code comments. A platform claim and its source go in Markdown.
+  A skill claim goes in `SKILL.md` or the reference that owns it, and a
+  maintainer script's claim goes in this file, next to the command. The
+  comment can name that file. `scripts/source-inventory.mjs` reads the skill's
+  Markdown and the example flows, never a script, so a page cited only in a
+  comment drops out of every release review.
+- Don't restate what another file owns, such as a value, a flag list or the
+  checks a script runs. Name the owner.
+- Don't narrate the change with "now", "previously" or "added for". The
+  commit message and the changelog hold that.
+- In a file you edit, delete commented-out code and any comment the code has
+  outgrown.
+
+The smoke test fails on a link in a code comment, and on a comment block
+longer than 8 lines, the header included.
+
 ## Changing an example
 
 Every `.flow-meta.xml` under `examples/` is deployed to a scratch org before
@@ -102,8 +128,9 @@ node scripts/smoke-test.mjs
 
 It checks the manifests, the Codex symlink, the skill's frontmatter and links,
 the examples against the checker, the checker against the legacy fixture, the
-deploy command `validate-examples.mjs` runs, the eval suite's shape, and the
-hook's behaviour. CI runs the same script.
+release baseline and the review scripts against the skill, the deploy command
+`validate-examples.mjs` runs, the eval suite's shape, the hook's behaviour,
+and the code comments. CI runs the same script.
 
 If you changed `SKILL.md` or a reference, consider running the eval suite as
 well. It needs a Claude Code build with `plugin eval`, and

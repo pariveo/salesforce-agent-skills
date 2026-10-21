@@ -76,8 +76,8 @@ change.
 ## Data 360 in flows
 
 Data 360 is the current name of Data Cloud
-([Salesforce product page](https://www.salesforce.com/data/)). Flow Builder
-and the metadata still use the old name in places.
+([Get Started with Data 360 Development](https://developer.salesforce.com/docs/data/data-cloud-dev/guide)).
+Flow Builder and the metadata still use the old name in places.
 
 - Get Records reads Data 360 data model objects (DMOs). Access is read only,
   needs a mapping from a data lake object (DLO) to the DMO, and is not

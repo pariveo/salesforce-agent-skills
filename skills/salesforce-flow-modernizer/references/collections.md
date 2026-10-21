@@ -47,6 +47,19 @@ output by the element name.
 </collectionProcessors>
 ```
 
+**Collection Filter Criteria resource (Winter '27, rolling out from September
+2026,
+[release note](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_collection_filter_criteria.htm&release=264&type=5)).**
+A resource type, not an element. It filters a collection and can sort the
+matches in the same step. On records that contain related records, such as an
+Apex-defined type, it can also filter on child relationships. An Assignment
+element then builds a collection from it. The decision table doesn't use it
+yet, because the Metadata API reference for API 68.0 lists the Flow field
+`collectionFilterCriteria` as reserved for future use and documents none of
+its fields ([Flow, Metadata API Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)).
+Not verified: its metadata shape, the lowest org API version that has it, and
+whether a flow using it deploys.
+
 ## Collection Sort
 
 `SortCollectionProcessor` with `sortOptions` (`sortField`, `sortOrder`,
