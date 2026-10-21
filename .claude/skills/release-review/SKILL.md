@@ -91,6 +91,11 @@ gone are each a finding. For each "Not verified" mark, search the
 documentation again, because a new page can settle it. For each source on
 another host, look for an official page that states the claim.
 
+The maintainer script sources are the official pages CONTRIBUTING.md cites
+for the maintainer scripts. They back no skill claim. Check each against the
+command next to it in CONTRIBUTING.md. A mismatch is a finding against that
+script or CONTRIBUTING.md, not against the skill.
+
 **Step 6. Examples.** With an org on the target release:
 
 ```bash

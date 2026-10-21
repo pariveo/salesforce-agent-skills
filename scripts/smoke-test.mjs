@@ -221,6 +221,9 @@ if (schemaSnapshots.length) {
 }
 const inventory = runScript('source-inventory.mjs', '--json');
 check(inventory.status === 0 && inventory.out?.sources.length > 0, 'source-inventory finds no sources');
+const contributingLinks = readFileSync(join(root, 'CONTRIBUTING.md'), 'utf8').match(/https:\/\/(?:help|developer)\.salesforce\.com\//g)?.length ?? 0;
+const maintainerCitations = inventory.out?.maintainerSources?.flatMap((s) => s.citations.filter((c) => c.file === 'CONTRIBUTING.md')) ?? [];
+check(maintainerCitations.length === contributingLinks, `source-inventory lists ${maintainerCitations.length} of the ${contributingLinks} official links in CONTRIBUTING.md`);
 
 // Eval suite: every case has a prompt and graders with a type
 const evalsDir = join(root, 'evals');

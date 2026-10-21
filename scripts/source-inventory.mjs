@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Lists every source the skill cites with the claims that cite it, plus the
 // "Not verified" marks and the releases named, as a release review checklist.
+// The official pages CONTRIBUTING.md cites for the maintainer scripts get a
+// group of their own, so they aren't read as skill claims.
 //
 //   node scripts/source-inventory.mjs [--json]
 
@@ -33,6 +35,17 @@ function block(lines, index, needle) {
   return `${from > 0 ? '...' : ''}${text.slice(from, to)}${to < text.length ? '...' : ''}`;
 }
 
+const LINK = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(?<![(\w])(https?:\/\/[^\s)>"']+)/g;
+function cites(source, path) {
+  const lines = source.split('\n');
+  return [...source.matchAll(LINK)].map((match) => {
+    const url = (match[2] ?? match[3]).replace(/[.,;]+$/, '');
+    const line = source.slice(0, match.index).split('\n').length;
+    const text = match[1]?.replace(/\s+/g, ' ') ?? null;
+    return { url, host: new URL(url).hostname, file: path, line, text, claim: block(lines, line - 1, text ? `[${text}]` : url) };
+  });
+}
+
 const citations = [];
 const unverified = [];
 const releases = new Map();
@@ -44,14 +57,7 @@ for (const file of files) {
   // Example flows: only the header comment is prose
   if (file.endsWith('.xml')) source = source.match(/<!--([\s\S]*?)-->/)?.[1] ?? '';
   const lines = source.split('\n');
-  const lineOf = (offset) => source.slice(0, offset).split('\n').length;
-
-  for (const match of source.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(?<![(\w])(https?:\/\/[^\s)>"']+)/g)) {
-    const url = (match[2] ?? match[3]).replace(/[.,;]+$/, '');
-    const line = lineOf(match.index);
-    const text = match[1]?.replace(/\s+/g, ' ') ?? null;
-    citations.push({ url, host: new URL(url).hostname, file: path, line, text, claim: block(lines, line - 1, text ? `[${text}]` : url) });
-  }
+  citations.push(...cites(source, path));
   lines.forEach((text, i) => {
     if (/\bNot verified\b/.test(text)) unverified.push({ file: path, line: i + 1, claim: block(lines, i, 'Not verified') });
     for (const [release] of text.matchAll(/\b(?:Spring|Summer|Winter) '\d\d\b/g)) {
@@ -63,8 +69,14 @@ for (const file of files) {
   });
 }
 
-const sources = new Map();
-for (const c of citations) sources.set(c.url, [...(sources.get(c.url) ?? []), c]);
+// CONTRIBUTING.md's other links are conventions and the licence, not platform claims
+const maintainerCitations = cites(readFileSync(join(root, 'CONTRIBUTING.md'), 'utf8'), 'CONTRIBUTING.md').filter((c) => OFFICIAL.has(c.host));
+
+function bySource(list) {
+  const sources = new Map();
+  for (const c of list) sources.set(c.url, [...(sources.get(c.url) ?? []), c]);
+  return [...sources].map(([url, cites]) => ({ url, official: OFFICIAL.has(cites[0].host), citations: cites.map(({ url: _, host: __, ...c }) => c) }));
+}
 const baseline = JSON.parse(readFileSync(join(root, 'maintenance', 'release.json'), 'utf8'));
 // Winter 'NN ships before Spring 'NN and Summer 'NN
 const releaseOrder = (r) => {
@@ -74,7 +86,8 @@ const releaseOrder = (r) => {
 
 const result = {
   baseline,
-  sources: [...sources].map(([url, cites]) => ({ url, official: OFFICIAL.has(cites[0].host), citations: cites.map(({ url: _, host: __, ...c }) => c) })),
+  sources: bySource(citations),
+  maintainerSources: bySource(maintainerCitations),
   unverified,
   releases: Object.fromEntries([...releases].sort(([a], [b]) => releaseOrder(a) - releaseOrder(b))),
   apiVersions: Object.fromEntries([...apis].sort(([a], [b]) => a - b)),
@@ -92,7 +105,8 @@ const out = [
   '',
   `Baseline: ${baseline.release} (API ${baseline.apiVersion}.0), reviewed ${baseline.reviewedOn}.`,
   `${official.length} official sources, ${citations.length} citations, ${unverified.length} "Not verified" marks.`,
-  'Paths are relative to skills/salesforce-flow-modernizer/.',
+  `${result.maintainerSources.length} official sources for the maintainer scripts, ${maintainerCitations.length} citations.`,
+  'Skill paths are relative to skills/salesforce-flow-modernizer/.',
   '',
   '## Official sources',
   '',
@@ -101,6 +115,15 @@ const out = [
 ];
 const cite = (c) => `  - ${c.file}:${c.line}${c.text ? ` [${c.text}]` : ''}: ${c.claim}`;
 for (const s of official) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
+out.push(
+  '',
+  '## Maintainer script sources',
+  '',
+  'Cited in CONTRIBUTING.md at the repository root, for the maintainer scripts. These back no skill claim. Tick each page when the command next to it still behaves as the page says.',
+  '',
+);
+if (!result.maintainerSources.length) out.push('None.');
+for (const s of result.maintainerSources) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
 out.push('', '## Other hosts', '', 'Not on help.salesforce.com or developer.salesforce.com. Keep only if no official page states the claim.', '');
 if (!other.length) out.push('None.');
 for (const s of other) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
