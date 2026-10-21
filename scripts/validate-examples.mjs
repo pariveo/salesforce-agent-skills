@@ -6,6 +6,15 @@
 //
 // The org is never taken from the CLI default. Use a scratch org or a sandbox.
 // --api raises the deployed copies to that apiVersion, to check them on a new release.
+//
+// It runs `sf project deploy start --dry-run --test-level NoTestRun` rather than
+// `sf project deploy validate`, which always runs Apex tests (RunLocalTests by
+// default) and so fails on the org's own uncovered Apex even when every example
+// deploys. NoTestRun applies only to development environments, such as sandbox,
+// Developer Edition or trial orgs, which is one more reason never to aim it at
+// production.
+// https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html
+// https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html
 
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -47,7 +56,10 @@ try {
   );
   const result = spawnSync(
     'sf',
-    ['project', 'deploy', 'validate', '--source-dir', 'force-app', '--target-org', targetOrg, '--wait', '30'],
+    [
+      'project', 'deploy', 'start', '--dry-run', '--test-level', 'NoTestRun',
+      '--source-dir', 'force-app', '--target-org', targetOrg, '--wait', '30',
+    ],
     { cwd: project, stdio: 'inherit' },
   );
   process.exitCode = result.status ?? 1;

@@ -2,7 +2,8 @@
 // Repository smoke test: manifests parse, the Codex symlink resolves to the
 // canonical skill folder, the skill frontmatter and links hold, the example
 // flows pass the checker, the checker still catches the legacy fixture, the
-// release baseline and the review scripts agree with the skill, the eval suite
+// release baseline and the review scripts agree with the skill, example
+// validation deploys without running Apex tests, the eval suite
 // is well-formed, and the hook speaks only on Flow metadata paths.
 // Exits non-zero on any failure so CI fails loudly.
 
@@ -225,6 +226,29 @@ if (schemaSnapshots.length) {
 }
 const inventory = runScript('source-inventory.mjs', '--json');
 check(inventory.status === 0 && inventory.out?.sources.length > 0, 'source-inventory finds no sources');
+
+// validate-examples must deploy without running the org's Apex tests. A stub
+// `sf` on PATH prints the arguments it was called with.
+if (process.platform !== 'win32') {
+  const stubDir = mkdtempSync(join(tmpdir(), 'sf-stub-'));
+  try {
+    writeFileSync(join(stubDir, 'sf'), '#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify(process.argv.slice(2)));\n', { mode: 0o755 });
+    const result = spawnSync(process.execPath, [join(root, 'scripts', 'validate-examples.mjs'), '--target-org', 'smoke-org'], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${stubDir}:${process.env.PATH}` },
+    });
+    let sfArgs = [];
+    try {
+      sfArgs = JSON.parse(result.stdout);
+    } catch {}
+    const flag = (name) => sfArgs[sfArgs.indexOf(name) + 1];
+    check(result.status === 0 && sfArgs.slice(0, 3).join(' ') === 'project deploy start', `validate-examples does not run "sf project deploy start" (ran: sf ${sfArgs.join(' ')})`);
+    check(sfArgs.includes('--dry-run') && flag('--test-level') === 'NoTestRun', 'validate-examples does not dry-run the deploy with --test-level NoTestRun');
+    check(flag('--target-org') === 'smoke-org', 'validate-examples does not pass --target-org to sf');
+  } finally {
+    rmSync(stubDir, { recursive: true, force: true });
+  }
+}
 
 // Eval suite: every case has a prompt and graders with a type
 const evalsDir = join(root, 'evals');
