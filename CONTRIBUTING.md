@@ -53,8 +53,8 @@ an example flow is content, so "Changing an example" below covers it instead.
   A skill claim goes in `SKILL.md` or the reference that owns it, and a
   maintainer script's claim goes in this file, next to the command. The
   comment can name that file. `scripts/source-inventory.mjs` reads the skill's
-  Markdown and the example flows, never a script, so a page cited only in a
-  comment drops out of every release review.
+  Markdown, the example flows and this file, never a script, so a page cited
+  only in a comment drops out of every release review.
 - Don't restate what another file owns, such as a value, a flag list or the
   checks a script runs. Name the owner.
 - Don't narrate the change with "now", "previously" or "added for". The
@@ -102,7 +102,10 @@ part of the plugin. It walks through these steps:
   `maintenance/flow-schema/`, and reports where the checker's tag lists
   differ from the schema.
 - `node scripts/source-inventory.mjs` lists every source the skill cites,
-  with each claim that cites it, and every "Not verified" mark.
+  with each claim that cites it, and every "Not verified" mark. In a group of
+  their own, it lists the help.salesforce.com and developer.salesforce.com
+  pages this file cites for the maintainer scripts. This file's other links
+  back no platform claim, so the inventory leaves them out.
 - `node scripts/validate-examples.mjs --target-org <alias> --api <version>`
   deploy-validates the examples raised to the new API version.
 
