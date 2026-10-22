@@ -75,7 +75,7 @@ Phone and File Upload
 Choice components' support is inconsistent in the docs, so check before
 relying on it. Blank values are not validated, so pair with `isRequired`. Is
 Blank and Is Null are not allowed in the rule
-([Validating User Input](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_screen_validate.htm&type=5)).
+([Improve Data Quality by Validating User Input](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_screen_validate.htm&type=5)).
 It works in the Lightning runtime only.
 
 A Decision after the screen that routes back to it with an error is the
