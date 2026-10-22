@@ -132,8 +132,8 @@ node scripts/smoke-test.mjs
 It checks the manifests, the Codex symlink, the skill's frontmatter and links,
 the examples against the checker, the checker against the legacy fixture, the
 release baseline and the review scripts against the skill, the deploy command
-`validate-examples.mjs` runs, the release script on a copy of the
-manifests and changelog, the eval suite's shape, the hook's behaviour, and
+`validate-examples.mjs` runs, the release and release notes scripts on a
+copy of the manifests and changelog, the eval suite's shape, the hook's behaviour, and
 the code comments. CI runs the same script.
 
 If you changed `SKILL.md` or a reference, consider running the eval suite as
@@ -174,11 +174,21 @@ for that version with today's date, and updates the comparison links at the
 bottom of the changelog. `--date YYYY-MM-DD` sets another date. It refuses a
 version that isn't newer, and an empty `[Unreleased]`.
 
-Commit the result as `chore(plugin): release <version>`. After the pull
-request merges, tag the merge commit `v<version>` and publish a GitHub release
-from the tag with that version's changelog section.
-`claude plugin tag` would name the tag `<plugin>--v<version>` instead, so
-don't use it here.
+Commit the result as `chore(plugin): release <version>` and open a pull
+request. When it merges, the `release` workflow in
+`.github/workflows/release.yml` tags the merge commit `v<version>` and
+publishes a GitHub release titled `Salesforce agent skills <version>`. The
+release notes are that version's changelog section, which
+`node scripts/release-notes.mjs <version>` prints, so you can preview them
+before the merge.
+
+The workflow runs only when a push to `main` changes
+`.claude-plugin/plugin.json`, and does nothing when the version already has a
+release, so an edit to the manifest's other fields publishes nothing. If a run
+fails, fix the cause and re-run the failed job. A re-run tags the same merge
+commit, while a later push would tag a later one. Don't tag by hand, and
+don't use `claude plugin tag`, which names the tag `<plugin>--v<version>`
+instead.
 
 By contributing you agree that your contribution is licensed under the
 [MIT licence](LICENSE) of this repository.

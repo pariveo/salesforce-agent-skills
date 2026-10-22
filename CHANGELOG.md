@@ -15,6 +15,13 @@ version instead.
 
 ## [Unreleased]
 
+### Added
+
+- Every release is published on GitHub, with that version's changelog
+  section as its release notes. A workflow creates the tag and the release
+  when the version bump merges, and `scripts/release-notes.mjs` prints the
+  notes.
+
 ## [0.4.0] - 2026-10-21
 
 ### Added
