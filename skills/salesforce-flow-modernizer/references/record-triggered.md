@@ -134,7 +134,7 @@ ascending order (ties by API name), then flows without an order by
 activation date, then 1001–2000. It applies separately to before-save and
 after-save flows. It cannot move a flow ahead of an Apex trigger, and has no
 direct effect on asynchronous or scheduled paths
-([Define the Run Order of Record-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_task_trigger_run_order.htm&type=5)). When flow B needs flow A's result,
+([Define the Run Order of Record-Triggered Flows for an Object](https://help.salesforce.com/s/articleView?id=platform.flow_task_trigger_run_order.htm&type=5)). When flow B needs flow A's result,
 merging them or passing state explicitly is still the stronger design.
 
 ## Platform event-triggered flows
