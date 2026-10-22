@@ -131,8 +131,12 @@ Source for this section unless linked otherwise:
   autolaunched flows through
   [Test Mode (Beta)](https://help.salesforce.com/s/articleView?id=platform.automate_flow_test_mode.htm&type=5).
   Screen flows are not among the supported types.
-- Scheduled paths are testable but asynchronous paths are not, and
-  delete-triggered flows allow manually evaluated scenarios only.
+- A record-triggered flow's test scenario can run one of its scheduled
+  paths, chosen under Select Path
+  ([Set Up and Run a Test Scenario (Beta)](https://help.salesforce.com/s/articleView?id=platform.automate_flow_test_mode_scenario.htm&type=5)).
+  Automated scenarios don't support asynchronous paths, and delete-triggered
+  flows allow manually evaluated scenarios only.
+- Automated scenarios for autolaunched flows don't support Wait elements.
 - [Mock outputs (Beta)](https://help.salesforce.com/s/articleView?id=platform.automate_flow_test_mock_output.htm&type=5)
   cover action and subflow elements only, so Get Records is not mocked. Run
   from Data Silo gives isolated test data backed by an Apex `@testSetup`
