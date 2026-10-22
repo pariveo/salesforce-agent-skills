@@ -22,6 +22,13 @@ version instead.
   when the version bump merges, and `scripts/release-notes.mjs` prints the
   notes.
 
+### Fixed
+
+- The Flow Tests section of `references/delivery.md` says that automated
+  test scenarios for autolaunched flows don't support Wait elements, and
+  cites a source for testing a scheduled path. The asynchronous path limit
+  applies to automated scenarios, as its source says.
+
 ## [0.4.0] - 2026-10-21
 
 ### Added
