@@ -146,9 +146,7 @@ Needs an example deploy: yes | no
 
 Don't edit the skill, the checker or the examples during the review. The
 report comes first, as in the skill's own audits. Once the maintainer agrees
-with the findings, each one that needs a change becomes its own pull request,
-and tickets for them go in the maintainers' private backlog, not this
-repository.
+with the findings, each one that needs a change becomes its own pull request.
 
 **Step 8. Move the baseline.** When every finding is either changed or
 recorded as "no change", update these together in one pull request:
