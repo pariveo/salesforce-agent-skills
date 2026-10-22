@@ -248,12 +248,13 @@ if (process.platform !== 'win32') {
   }
 }
 
-// Release script, run on a copy so the real manifests and changelog stay put.
-// The copy gets an [Unreleased] entry, since right after a release it has none.
+// Release and release notes scripts, run on a copy so the real manifests and
+// changelog stay put. The copy gets an [Unreleased] entry, since right after a
+// release it has none.
 {
   const copy = mkdtempSync(join(tmpdir(), 'release-'));
   try {
-    for (const path of ['scripts/release.mjs', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'CHANGELOG.md']) {
+    for (const path of ['scripts/release.mjs', 'scripts/release-notes.mjs', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'CHANGELOG.md']) {
       mkdirSync(dirname(join(copy, path)), { recursive: true });
       copyFileSync(join(root, path), join(copy, path));
     }
@@ -271,6 +272,14 @@ if (process.platform !== 'win32') {
     check(released.includes('## [Unreleased]\n\n## [99.0.0] - 2099-01-01\n\n### Added\n\n- Smoke test entry.\n'), 'release.mjs does not move the [Unreleased] entries under 99.0.0');
     check(/^\[Unreleased\]: \S+\/compare\/v99\.0\.0\.\.\.HEAD\n\[99\.0\.0\]: \S+\/releases\/tag\/v99\.0\.0$/m.test(released), 'release.mjs does not update the changelog links');
     check(/nothing under/.test(release('99.0.1').stderr), 'release.mjs releases an empty [Unreleased]');
+
+    const notes = (version) => spawnSync(process.execPath, [join(copy, 'scripts', 'release-notes.mjs'), version], { encoding: 'utf8' });
+    const newestNotes = notes('99.0.0').stdout;
+    check(newestNotes.startsWith('### Added\n\n- Smoke test entry.\n') && !/^## /m.test(newestNotes), 'release-notes.mjs does not print the 99.0.0 section alone, without its heading');
+    const oldest = [...released.matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)].at(-1)?.[1];
+    const oldestNotes = notes(oldest);
+    check(oldestNotes.status === 0 && oldestNotes.stdout.trim() && !/^\[[^\]]+\]: /m.test(oldestNotes.stdout), `release-notes.mjs does not stop the ${oldest} section before the changelog links`);
+    check(notes('98.0.0').status !== 0, 'release-notes.mjs prints notes for a version the changelog lacks');
   } finally {
     rmSync(copy, { recursive: true, force: true });
   }
