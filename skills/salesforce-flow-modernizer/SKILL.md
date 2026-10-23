@@ -151,7 +151,7 @@ API Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.
 | Order a collection | Collection Sort (sorts in place) | `SortCollectionProcessor` | 50 | `Opportunity_Allocate_Budget_Waterfall` | Manual sorting in a loop |
 | Create, update or delete many records | One DML on the prepared collection | `recordCreates` `inputReference` | any | `Opportunity_Create_Followup_Tasks` | DML inside a loop |
 | Options from records or a picklist | Record / picklist choice set | `dynamicChoiceSets` | any | `Account_Order_Entry_Screen` | Get Records + Loop building choices |
-| Totals, visibility or text that follow input | Reactive formula, `visibilityRule` | `formulas`, screen fields | 59 | `Account_Order_Entry_Screen` | A second screen to recalculate |
+| Totals, visibility or text that follow input | Reactive formula, `visibilityRule` | `formulas`, screen fields | 59 (visibility on a formula: 68) | `Account_Order_Entry_Screen` | A second screen to recalculate |
 | Input rules on a screen | Component `validationRule` | screen `fields` | any | `Account_Order_Entry_Screen` | Decision after the screen back to an error screen |
 | Server logic without leaving the screen | Screen action + Action Button | `screens.actions`, `triggers` | 59 | `Account_Check_Pipeline_Screen` | Next, Get Records, back again |
 | Set fields on the triggering record | Before-save flow, Assignment to `$Record` | `triggerType` `RecordBeforeSave` | any | `Opportunity_Before_Save_Set_Next_Step` | After-save Update Records on `$Record` |
