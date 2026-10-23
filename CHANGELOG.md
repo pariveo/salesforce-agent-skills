@@ -34,6 +34,10 @@ version instead.
 - A visibility rule that references a formula built from components on the
   same screen needs a flow on API version 68.0 or later. `SKILL.md` and
   `references/screens.md` gave API 59 for every reactive visibility rule.
+- `references/record-triggered.md` sources the before-save performance claim
+  from the Help page on before-save and after-save flows, which rates a
+  before-save flow as up to 10 times faster. The architect decision guide it
+  cited no longer makes the claim.
 
 ## [0.4.0] - 2026-10-21
 

@@ -53,10 +53,10 @@ Before-save outranks Transform. When a value on the triggering record is a
 sum over a collection, keep the flow before-save and sum in a Loop declared
 `Escape: E3`, and count with Filter + `AssignCount`. Do not move the work to
 after-save to use a Transform, because the Loop without DML or queries costs
-CPU in memory, while the second save re-runs the whole save order. Salesforce names
-before-save flows for same-record field updates as the largest performance
-gain in record-triggered automation ([Record-Triggered Automation decision
-guide](https://architect.salesforce.com/docs/architect/decision-guides/guide/record-triggered)).
+CPU in memory, while the second save re-runs the whole save order. Salesforce
+rates a before-save flow as up to 10 times faster than an after-save flow,
+with no extra save
+([Decide Between Before-Save and After-Save Record-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_get_started_record_triggered_before_or_after_save.htm&type=5)).
 
 On create, `$Record.Id` is null in a before-save flow. A Get Records filtered
 on `<Lookup> = $Record.Id` then matches every record whose lookup is empty.
