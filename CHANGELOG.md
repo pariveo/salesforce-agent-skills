@@ -31,6 +31,9 @@ version instead.
 - `references/collections.md` no longer rules Transform out for every nested
   source. Mapping supports up to one nested collection, and a nested
   collection can't be joined, as the Transform Element page says.
+- A visibility rule that references a formula built from components on the
+  same screen needs a flow on API version 68.0 or later. `SKILL.md` and
+  `references/screens.md` gave API 59 for every reactive visibility rule.
 
 ## [0.4.0] - 2026-10-21
 

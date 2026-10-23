@@ -50,6 +50,13 @@ GA since org API 59. On the same screen, formulas, Display Text,
 `visibilityRule` and component attributes re-evaluate as the user types,
 without a Next round trip.
 
+A `visibilityRule` that references a component holds from API 59. A rule that
+references a formula built from components on the same screen evaluates
+correctly only when the flow runs on API version 68.0 or later, set in the
+flow version properties. It is a Winter '27 run-time change
+([Evaluate Conditional Visibility Rules with Reactive Formulas](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_screen_reactive_formulas_visibility_264.htm&release=264&type=5),
+[Flow and Process Run-Time Changes in API Version 68.0](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_versioned_updates.htm&release=264&type=5)).
+
 - Reactive components include Text, Number, Currency, Date, Date/Time, Email,
   Long Text Area, Checkbox, Toggle, Slider, Picklist, Radio Buttons,
   Multi-Select Picklist, Choice Lookup, Lookup, Data Table, Display Text,
