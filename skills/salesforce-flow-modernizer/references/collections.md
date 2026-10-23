@@ -109,9 +109,10 @@ it (deploy error, checker FLOW017).
   `transformValueReference` reserved and documents no JoinDefinition keys. The
   example was verified by deploy and run. When in doubt, build one join in
   Flow Builder, retrieve it, and copy its shape.
-- Documented limits: no nested collections, and each source stays under 700
-  records on the synchronous path and under 1,500 on asynchronous or scheduled
-  paths ([Transform Element](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_transform.htm&type=5)).
+- Documented limits: mapping supports up to one nested collection, and a
+  nested collection can't be joined. Each source stays under 700 records on
+  the synchronous path and under 1,500 on asynchronous or scheduled paths
+  ([Transform Element](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_transform.htm&type=5)).
 
 ## Where each element is allowed
 
