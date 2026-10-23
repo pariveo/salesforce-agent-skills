@@ -28,6 +28,9 @@ version instead.
   test scenarios for autolaunched flows don't support Wait elements, and
   cites a source for testing a scheduled path. The asynchronous path limit
   applies to automated scenarios, as its source says.
+- `references/collections.md` no longer rules Transform out for every nested
+  source. Mapping supports up to one nested collection, and a nested
+  collection can't be joined, as the Transform Element page says.
 
 ## [0.4.0] - 2026-10-21
 
