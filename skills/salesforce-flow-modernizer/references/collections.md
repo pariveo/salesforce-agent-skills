@@ -84,9 +84,11 @@ joins. It does not filter or sort, so put a Filter or Sort before it.
 
 **Sum and Count.** `transformType` `Sum` or `Count` with `inputParameters`
 named `aggregationValues` (the collection) and, for Sum, `aggregationField`
-(the field API name as a `stringValue`). Target `dataType` Number or Currency,
+(the field API name as a `stringValue`). Target `dataType` Number,
 `isCollection` false. No other aggregate functions exist
 ([Sum or Count Items in Collections](https://help.salesforce.com/s/articleView?id=platform.flow_build_logic_transform_sum_or_count.htm&type=5)).
+A Currency target deploys and runs too, as `Transform_Total_Amount` in the
+`Opportunity_Create_Followup_Tasks` example shows (API 67.0).
 
 **Join (org API 63+,
 [Spring '25 release note](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_builder_transform_join.htm&release=254&type=5)).** Inner join of two collections on one or more keys, in

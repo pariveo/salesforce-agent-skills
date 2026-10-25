@@ -103,7 +103,8 @@ asynchronous Apex limits.
 
 A `scheduledPaths` entry with `timeSource` `RecordField` + `recordField`, or
 `RecordTriggerEvent`, and `offsetNumber` + `offsetUnit` (Minutes, Hours, Days,
-Months from org API 56). Negative offsets run before the date.
+Months from org API 56). Negative offsets run before the date
+([Flow, FlowScheduledPath](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)).
 `maxBatchSize` 1–200, default 200 ([Scheduled Paths](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_scheduled_path.htm&type=5)).
 
 - After-save flows only. Update-triggered flows need "only when updated to
