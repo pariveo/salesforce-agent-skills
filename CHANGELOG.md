@@ -56,6 +56,12 @@ version instead.
 - `references/ai-and-agents.md` names Spring '24 as the release that
   introduced the Send to Data Cloud flow action, as its release note says,
   instead of Winter '24.
+- `references/collections.md` says the Collection Filter Criteria resource
+  returns the first matching record, which later elements reference
+  directly, and no longer says an Assignment builds a collection from it. It
+  shows the metadata Flow Builder stores, and reports a deploy and run on a
+  Winter '27 scratch org, where the Metadata API accepted the resource from
+  API 67.0.
 
 ## [0.4.0] - 2026-10-21
 
