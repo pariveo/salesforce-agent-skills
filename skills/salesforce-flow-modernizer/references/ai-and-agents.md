@@ -84,8 +84,8 @@ Flow Builder and the metadata still use the old name in places.
   available in Starter or Professional editions.
 - Record-triggered flows must read Data 360 objects on the asynchronous
   path, because the synchronous path fails when it touches external data.
-- Data Cloud-triggered flows (`triggerType` `DataCloudDataChange`) start on
-  DMO or calculated insight conditions. Flow Builder still labels the type
+- Data Cloud-triggered flows (`triggerType` `DataCloudDataChange`) start
+  when conditions are met in a DMO. Flow Builder still labels the type
   Data Cloud-Triggered Flow
   ([Trigger Flows with Data 360 Data](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_data_cloud.htm&type=5)).
 - Writes go through the `dataCloudIngestionApi` action, which Flow Builder
