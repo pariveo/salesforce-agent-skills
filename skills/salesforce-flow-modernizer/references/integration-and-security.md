@@ -39,6 +39,19 @@ retrieve the flow and the `ExternalServiceRegistration`, and keep both in
 source control. For APIs with an OpenAPI schema, register them as an External
 Service directly.
 
+From Winter '27 (API 68.0), in Enterprise, Performance, Unlimited and
+Developer editions with Data 360 provisioned, an External Service can declare
+its request body as `schema: {}`, which accepts any shape. The flow connects a
+record variable straight to the action's body input, and Flow serializes the
+record to JSON. That replaces an Apex class matching the record field for
+field, and the Transform element that copies every field into it. The
+registration no longer types the body, so the endpoint has to validate the
+data. Query parameters, path parameters and headers can stay typed beside the
+any-type body
+([release note](https://help.salesforce.com/s/articleView?id=release-notes.rn_ext_services_any_type_support.htm&release=264&type=5)).
+Treat Data 360 as an assumption until the org confirms it, and keep the typed
+body on an org without it.
+
 ## Email
 
 Send Email action with a Text Template or an email template:
