@@ -89,9 +89,9 @@ Flow Builder and the metadata still use the old name in places.
   Data Cloud-Triggered Flow
   ([Trigger Flows with Data 360 Data](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_data_cloud.htm&type=5)).
 - Writes go through the `dataCloudIngestionApi` action, which Flow Builder
-  introduced in Winter '24 as Send to Data Cloud, one action per Ingestion API
+  introduced in Spring '24 as Send to Data Cloud, one action per Ingestion API
   connector schema
-  ([release note](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_builder_send_data_to_data_cloud.htm&release=248)).
+  ([release note](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_builder_send_data_to_data_cloud.htm&release=248&type=5)).
   Not verified: whether the action carries the same label today.
 
 ## Flow Orchestration
