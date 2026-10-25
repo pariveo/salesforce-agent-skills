@@ -82,7 +82,7 @@ directory and listed the skill afterwards, and Codex also found it through
 `.agents/skills/` and a user skills folder. The example flows deploy on org
 API 67.0 and 68.0, and the decision table lists the lowest org API version for
 each element, so the skill also works against older orgs with fewer elements
-available. The skill was last reviewed against Summer '26 (API 67.0).
+available. The skill was last reviewed against Winter '27 (API 68.0).
 Maintainers review it again for each Salesforce release, as
 [CONTRIBUTING.md](CONTRIBUTING.md#release-reviews) describes.
 
