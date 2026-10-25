@@ -52,7 +52,7 @@ under open decisions.
 
 **Step 2. API version.** With an org,
 `sf org display --target-org <alias>` shows "Api Version". Without one, use
-`sourceApiVersion` from the project's `sfdx-project.json`, or 67.0 when that
+`sourceApiVersion` from the project's `sfdx-project.json`, or 68.0 when that
 is missing too, and say so. Set new flows' `apiVersion` to that version.
 
 **Step 3. Classify.** Existing flow or new build. Flow type (screen,
@@ -203,7 +203,7 @@ subflow for logic with one caller.
 
 ## Verify before asserting
 
-- Currency: this skill was last reviewed against Summer '26 (API 67.0). On an
+- Currency: this skill was last reviewed against Winter '27 (API 68.0). On an
   org with a higher API version, the table can miss newer elements. Say so
   before calling a requirement unsupported, and check that release's notes.
 - Availability: org API version against the table. Treat licence-gated

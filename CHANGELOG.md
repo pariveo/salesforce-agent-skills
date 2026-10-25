@@ -21,6 +21,15 @@ version instead.
   section as its release notes. A workflow creates the tag and the release
   when the version bump merges, and `scripts/release-notes.mjs` prints the
   notes.
+- The skill names Winter '27 (API 68.0) as the release it was last reviewed
+  against, and falls back to API 68.0 when neither an org nor
+  `sourceApiVersion` gives a version. The checker's tag lists match the API
+  68.0 Metadata WSDL, so FLOW018 warns on a `<segment>` tag directly under
+  `<Flow>`, which that schema doesn't have.
+- `references/integration-and-security.md` notes the Winter '27 any-type
+  request body for External Services: on API 68.0 in an org with Data 360,
+  a flow can pass a record variable straight to the action, without an Apex
+  wrapper class or a Transform element.
 
 ### Fixed
 
@@ -38,6 +47,15 @@ version instead.
   from the Help page on before-save and after-save flows, which rates a
   before-save flow as up to 10 times faster. The architect decision guide it
   cited no longer makes the claim.
+- `references/ai-and-agents.md` says a Data Cloud-triggered flow starts when
+  conditions are met in a data model object, as its source says, and no
+  longer names calculated insight conditions as a trigger.
+- The Sum or Count Transform's Currency target and the scheduled path offset
+  units cite a source that states them: the `Opportunity_Create_Followup_Tasks`
+  deploy and the Metadata API's `FlowScheduledPath`.
+- `references/ai-and-agents.md` names Spring '24 as the release that
+  introduced the Send to Data Cloud flow action, as its release note says,
+  instead of Winter '24.
 
 ## [0.4.0] - 2026-10-21
 

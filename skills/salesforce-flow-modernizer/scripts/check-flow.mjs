@@ -50,7 +50,7 @@ const ELEMENT_TYPES = [
   'recordUpdates', 'screens', 'subflows', 'transforms', 'waits', 'orchestratedStages', 'steps',
 ];
 // Flow and FlowElementReferenceOrValue in the API 68.0 Metadata WSDL. `ends` and the other WSDL-only
-// fields aren't in the Developer Guide yet; `segment` is in the guide (reserved) but not the WSDL.
+// fields aren't in the Developer Guide yet.
 const FLOW_FIELDS = new Set([
   'accessType', 'actionCalls', 'apexPluginCalls', 'apiVersion', 'areMetricsLoggedToDataCloud', 'assignments',
   'choices', 'collectionFilterCriteria', 'collectionProcessors', 'constants', 'customErrors', 'customProperties',
@@ -58,7 +58,7 @@ const FLOW_FIELDS = new Set([
   'experiments', 'formulas', 'fullName', 'groups', 'interviewLabel', 'isAdditionalPermissionRequiredToRun',
   'isOverridable', 'isTemplate', 'label', 'loops', 'migratedFromWorkflowRuleName', 'orchestratedStages',
   'overriddenFlow', 'processMetadataValues', 'processType', 'recordCreates', 'recordDeletes', 'recordLookups',
-  'recordRollbacks', 'recordUpdates', 'runInMode', 'screens', 'segment', 'sourceTemplate', 'stages', 'start',
+  'recordRollbacks', 'recordUpdates', 'runInMode', 'screens', 'sourceTemplate', 'stages', 'start',
   'startElementReference', 'status', 'steps', 'subflows', 'textTemplates', 'timeZoneSidKey', 'transforms',
   'triggerOrder', 'variables', 'waits',
 ]);
