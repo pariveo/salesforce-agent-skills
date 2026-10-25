@@ -50,15 +50,68 @@ output by the element name.
 **Collection Filter Criteria resource (Winter '27, rolling out from September
 2026,
 [release note](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_collection_filter_criteria.htm&release=264&type=5)).**
-A resource type, not an element. It filters a collection and can sort the
-matches in the same step. On records that contain related records, such as an
-Apex-defined type, it can also filter on child relationships. An Assignment
-element then builds a collection from it. The decision table doesn't use it
-yet, because the Metadata API reference for API 68.0 lists the Flow field
-`collectionFilterCriteria` as reserved for future use and documents none of
-its fields ([Flow, Metadata API Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)).
-Not verified: its metadata shape, the lowest org API version that has it, and
-whether a flow using it deploys.
+A resource type, not an element. It filters a record collection, sorts the
+matches, and returns the first matching record. Unlike the Collection Filter
+element, it returns a single record, so later elements such as a Decision
+reference it and its fields directly, with no Assignment or loop in between.
+On records that contain related records, such as an Apex-defined type, it can
+also filter on child relationships (release note). The decision table has no
+row for it yet.
+
+A Winter '27 scratch org (API 68.0) showed the rest, in a flow built in Flow
+Builder, retrieved, redeployed and run on 2026-10-25:
+
+- Flow Builder stores it as below. It writes no `<label>`, and a deploy
+  rejects one ("invalid at this location in type
+  FlowCollectionFilterCriteria"). Flow Builder requires at least one sort
+  condition.
+- The flow deploys active. Assigning the resource to a single record variable
+  of its object deploys, and assigning it to a record collection variable
+  fails ("isn't a valid reference").
+- At run time it returned the first match in the sort order. Sorting the
+  other way returned the match that had sorted last. With no match, the
+  resource and its fields were null, and a Decision on
+  `{!First_Matching_Account.Name}` ran without a fault.
+- The Metadata API accepted this XML with `sourceApiVersion` 67.0 and 68.0.
+  At 66.0 the deploy failed with "Property 'nullsFirst' not valid in version
+  66.0". A check-only deploy accepted the flow's own `apiVersion` down to
+  50.0.
+
+The Metadata API reference for API 68.0 still lists `collectionFilterCriteria`
+as reserved for future use and documents none of its fields
+([Flow, Metadata API Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)),
+so the shape below comes from the retrieve alone.
+
+```xml
+<collectionFilterCriteria>
+    <name>First_Matching_Account</name>
+    <dataType>SObject</dataType>
+    <filterCondition>And</filterCondition>
+    <filterOptions>
+        <leftValueReference>Get_Accounts.Name</leftValueReference>
+        <objectFieldName>Name</objectFieldName>
+        <objectReferencePath>Get_Accounts</objectReferencePath>
+        <operator>Contains</operator>
+        <rightValue>
+            <stringValue>Example</stringValue>
+        </rightValue>
+    </filterOptions>
+    <isGroupedConditions>false</isGroupedConditions>
+    <objectReferencePath>Get_Accounts</objectReferencePath>
+    <sortOptions>
+        <nullsFirst>false</nullsFirst>
+        <objectReferencePath>Get_Accounts</objectReferencePath>
+        <sortField>Name</sortField>
+        <sortOrder>Asc</sortOrder>
+    </sortOptions>
+    <subType>Account</subType>
+</collectionFilterCriteria>
+```
+
+Not verified: whether an org still on Summer '26 (API 67.0) has it, whether a
+flow with an `apiVersion` below 68.0 runs it, how `formatType`,
+`complexConditionLogic` and grouped conditions are written, and filtering on
+child relationships.
 
 ## Collection Sort
 
