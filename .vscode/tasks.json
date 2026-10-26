@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Release",
+      "detail": "Cut a release from origin/main: version pull request, merge on green checks, then the release workflow tags and publishes.",
+      "type": "shell",
+      "command": "node scripts/cut-release.mjs ${input:releaseBump}",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Release (dry run)",
+      "detail": "Show the next version and its release notes. Changes nothing.",
+      "type": "shell",
+      "command": "node scripts/cut-release.mjs --dry-run",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "releaseBump",
+      "type": "pickString",
+      "description": "Version bump. auto reads [Unreleased] in CHANGELOG.md and the commits since the last tag.",
+      "options": ["auto", "patch", "minor", "major"],
+      "default": "auto"
+    }
+  ]
+}

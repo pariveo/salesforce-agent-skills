@@ -161,8 +161,33 @@ changes
 ([plugin manifest reference](https://code.claude.com/docs/en/plugins-reference#version)),
 so merged changes stay invisible to existing installs until the next release.
 
-Choose the version from the `[Unreleased]` entries and the rules at the top
-of [CHANGELOG.md](CHANGELOG.md), then run:
+To cut a release in one step, run the VS Code task "Release"
+(`.vscode/tasks.json`), or:
+
+```bash
+node scripts/cut-release.mjs
+```
+
+It works from any checkout and branch, because it cuts the release branch
+`chore/release-<version>` from `origin/main` in a temporary worktree. There it
+runs `scripts/release.mjs` and the smoke test, commits, pushes and opens the
+pull request. It squash-merges the pull request once its required checks
+pass, then waits for the `release` workflow and prints the release URL. It
+asks before it changes anything, and `--yes` skips the question.
+
+- **The version.** A breaking change raises the major version, or the minor
+  version below 1.0.0. It counts as breaking when a commit since the last tag
+  is marked with `!` or a `BREAKING CHANGE:` footer, or when `[Unreleased]`
+  has a `### Removed` section. Otherwise an `### Added` section raises the
+  minor version and anything else the patch. Check the result against the
+  rules at the top of [CHANGELOG.md](CHANGELOG.md), and pass `patch`,
+  `minor`, `major` or a version to override it.
+- **A dry run**, `--dry-run` or the task "Release (dry run)", prints the next
+  version and its release notes and changes nothing.
+- **A re-run resumes.** When a release pull request is still open, it waits
+  for its checks and merges it instead of starting another.
+
+The steps it runs can also be taken by hand. Choose the version, then run:
 
 ```bash
 node scripts/release.mjs <version>
