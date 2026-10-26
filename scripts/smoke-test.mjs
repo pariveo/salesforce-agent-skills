@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const failures = [];
@@ -283,6 +283,18 @@ if (process.platform !== 'win32') {
   } finally {
     rmSync(copy, { recursive: true, force: true });
   }
+}
+
+// Version rule of cut-release.mjs, without its git and gh steps
+{
+  const { bumpFor, nextVersion } = await import(pathToFileURL(join(root, 'scripts', 'cut-release.mjs')).href);
+  const fix = { subject: 'fix(skill): x', body: '' };
+  check(bumpFor({ version: '0.4.0', unreleased: '### Fixed\n\n- x', commits: [fix] }) === 'patch', 'cut-release.mjs does not pick patch for fixes only');
+  check(bumpFor({ version: '0.4.0', unreleased: '### Added\n\n- x', commits: [fix] }) === 'minor', 'cut-release.mjs does not pick minor for an Added entry');
+  check(bumpFor({ version: '0.4.0', unreleased: '### Fixed', commits: [{ subject: 'feat(skill)!: x', body: '' }] }) === 'minor', 'cut-release.mjs does not pick minor for a breaking change below 1.0.0');
+  check(bumpFor({ version: '1.2.0', unreleased: '### Fixed', commits: [{ subject: 'fix: x', body: 'BREAKING CHANGE: y' }] }) === 'major', 'cut-release.mjs does not pick major for a breaking change from 1.0.0');
+  check(bumpFor({ version: '1.2.0', unreleased: '### Removed', commits: [fix] }) === 'major', 'cut-release.mjs does not treat a Removed entry as breaking');
+  check(['0.4.1', '0.5.0', '1.0.0'].join() === ['patch', 'minor', 'major'].map((b) => nextVersion('0.4.0', b)).join(), 'cut-release.mjs computes the wrong next version');
 }
 
 // Eval suite: every case has a prompt and graders with a type

@@ -21,6 +21,9 @@ version instead.
   section as its release notes. A workflow creates the tag and the release
   when the version bump merges, and `scripts/release-notes.mjs` prints the
   notes.
+- A one-step release for maintainers: `scripts/cut-release.mjs`, also the
+  VS Code task "Release", picks the version, opens the release pull request,
+  merges it once its checks pass and waits for the release to publish.
 - The skill names Winter '27 (API 68.0) as the release it was last reviewed
   against, and falls back to API 68.0 when neither an org nor
   `sourceApiVersion` gives a version. The checker's tag lists match the API
