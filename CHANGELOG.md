@@ -15,6 +15,8 @@ version instead.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-29
+
 ### Added
 
 - Every release is published on GitHub, with that version's changelog
@@ -274,6 +276,7 @@ and a checker for its own output.
   from `automation-flow-generate` in Salesforce's own Claude Code plugin,
   and when to use which.
 
-[Unreleased]: https://github.com/pariveo/salesforce-agent-skills/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/pariveo/salesforce-agent-skills/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/pariveo/salesforce-agent-skills/releases/tag/v0.5.0
 [0.4.0]: https://github.com/pariveo/salesforce-agent-skills/releases/tag/v0.4.0
 [0.3.1]: https://github.com/pariveo/salesforce-agent-skills/releases/tag/v0.3.1
