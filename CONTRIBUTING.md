@@ -133,7 +133,7 @@ It checks the manifests, the Codex symlink, the skill's frontmatter and links,
 the examples against the checker, the checker against the legacy fixture, the
 release baseline and the review scripts against the skill, the deploy command
 `validate-examples.mjs` runs, the release and release notes scripts on a
-copy of the manifests and changelog, the eval suite's shape, the hook's behaviour, and
+copy of the manifests and changelog, bare `@` mentions in the changelog, the eval suite's shape, the hook's behaviour, and
 the code comments. CI runs the same script.
 
 If you changed `SKILL.md` or a reference, consider running the eval suite as
@@ -152,6 +152,20 @@ well. It needs a Claude Code build with `plugin eval`, and
   will notice the change. The changelog says what counts as breaking.
 - Fill in the pull request template: what changed, the deploy result for any
   example you touched, and the smoke test result.
+
+## Mentions
+
+GitHub turns an `@word` in an issue, a pull request, a comment or a release
+into a link to the account of that name and notifies it. Apex annotations and
+LWC decorators are real accounts: `@AuraEnabled`, `@isTest`, `@future` and
+`@wire` all belong to people with nothing to do with this repository. Write
+them in backticks, where GitHub leaves them alone.
+
+The notification goes out the moment the text is saved, so no check on a pull
+request can take it back. Proofread titles, bodies and comments before you
+send them. The changelog is the one text a check can still catch: it becomes
+the release notes, and the smoke test and `scripts/release-notes.mjs` both
+refuse an `@word` in it outside a code span.
 
 ## Releasing
 

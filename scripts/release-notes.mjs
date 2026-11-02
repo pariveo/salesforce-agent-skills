@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { bareMentions } from './mentions.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -28,4 +29,6 @@ const rest = changelog.slice(start.index + start[0].length);
 const end = rest.search(/^## \[|^\[Unreleased\]:/m);
 const notes = (end === -1 ? rest : rest.slice(0, end)).trim();
 if (!notes) fail(`CHANGELOG.md has nothing under ${version}`);
+const mentions = bareMentions(notes);
+if (mentions.length) fail(`CHANGELOG.md mentions ${mentions.join(', ')} under ${version}. Put each in backticks.`);
 process.stdout.write(`${notes}\n`);
