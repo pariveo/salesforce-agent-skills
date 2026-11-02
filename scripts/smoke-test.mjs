@@ -7,6 +7,7 @@ import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, mkdir
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { bareMentions } from './mentions.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const failures = [];
@@ -32,6 +33,12 @@ check(codexMarketplace.plugins?.[0]?.name === codexPlugin.name, 'Codex marketpla
 
 const changelog = readFileSync(join(root, 'CHANGELOG.md'), 'utf8');
 check(changelog.includes(`## [${claudePlugin.version}]`), `CHANGELOG.md has no entry for ${claudePlugin.version}`);
+const changelogMentions = bareMentions(changelog);
+check(changelogMentions.length === 0, `CHANGELOG.md mentions ${changelogMentions.join(', ')}; put each in backticks`);
+check(
+  bareMentions('Reads @AuraEnabled, not `@isTest` or a@b.de\n```apex\n@future\n```\n<!-- @wire -->').join() === '@AuraEnabled',
+  'mentions.mjs does not find exactly the bare mention outside code and comments',
+);
 
 // Codex discovery symlink
 const linkPath = join(root, '.agents/skills', SKILL);
@@ -254,7 +261,7 @@ if (process.platform !== 'win32') {
 {
   const copy = mkdtempSync(join(tmpdir(), 'release-'));
   try {
-    for (const path of ['scripts/release.mjs', 'scripts/release-notes.mjs', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'CHANGELOG.md']) {
+    for (const path of ['scripts/release.mjs', 'scripts/release-notes.mjs', 'scripts/mentions.mjs', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'CHANGELOG.md']) {
       mkdirSync(dirname(join(copy, path)), { recursive: true });
       copyFileSync(join(root, path), join(copy, path));
     }
@@ -280,6 +287,8 @@ if (process.platform !== 'win32') {
     const oldestNotes = notes(oldest);
     check(oldestNotes.status === 0 && oldestNotes.stdout.trim() && !/^\[[^\]]+\]: /m.test(oldestNotes.stdout), `release-notes.mjs does not stop the ${oldest} section before the changelog links`);
     check(notes('98.0.0').status !== 0, 'release-notes.mjs prints notes for a version the changelog lacks');
+    writeFileSync(join(copy, 'CHANGELOG.md'), released.replace('- Smoke test entry.', '- Smoke test entry for @AuraEnabled.'));
+    check(/mentions @AuraEnabled/.test(notes('99.0.0').stderr), 'release-notes.mjs prints notes that mention an account');
   } finally {
     rmSync(copy, { recursive: true, force: true });
   }
