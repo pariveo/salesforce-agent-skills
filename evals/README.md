@@ -16,6 +16,7 @@ checks.
 | `scheduled-reminder` | Scheduled path with a −30 day offset on `EndDate`, not a polling schedule-triggered flow |
 | `wait-for-event` | Wait element on a platform event, resume filter as `inputParameters` |
 | `transform-join` | Transform InnerJoin of two collections, join and mapping in one Transform, one Create, no loop |
+| `filter-criteria-first-match` | Collection Filter Criteria resource sorted on `CloseDate` picks one record, one Create, no loop |
 | `loop-with-escape` | A loop that is right (sequence numbers) is kept and declared `Escape: E2`, with one Update |
 | `audit-legacy-flow` | Audit of a seeded legacy flow: DML in the loop ranked first, replacements named, file untouched |
 
