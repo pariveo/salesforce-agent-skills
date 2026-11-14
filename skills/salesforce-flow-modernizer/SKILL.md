@@ -140,11 +140,12 @@ Process Builder and workflow rule mapping is in
 
 "Org API" is the lowest org API version that has the element ([Flow, Metadata
 API Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)). Examples are in `examples/flows/`, deployed and run on API
-67.0.
+67.0, and `Opportunity_Create_Task_Next_Closing` on 68.0.
 
 | Requirement | Use | Metadata | Org API | Example | Replaces |
 | --- | --- | --- | --- | --- | --- |
 | Keep the items of a collection that match criteria | Collection Filter (conditions or formula) | `collectionProcessors`, `FilterCollectionProcessor` | 53 | `Opportunity_Create_Followup_Tasks` | Loop + Decision + Assignment |
+| Find one record in a collection: the first match after a sort | Collection Filter Criteria resource, referenced directly (one record or null) | `collectionFilterCriteria` | 68 ([release note](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_collection_filter_criteria.htm&release=264&type=5)) | `Opportunity_Create_Task_Next_Closing` | Loop + Decision + Assignment keeping the first match |
 | Build records from a collection, reshape fields | Transform, Map | `transforms` | 59 | `Opportunity_Create_Followup_Tasks` | Loop + Assignment building a collection |
 | Sum or count a collection | Transform, Sum / Count. In before-save flows, Filter + Assignment `AssignCount`, or a Loop for a Sum (E3) | `transforms`, `inputParameters` | 59 (primitive target 62) | `Opportunity_Create_Followup_Tasks`, `Account_Before_Save_Count_Contacts` | Loop counters |
 | Combine two collections by a key | Transform, InnerJoin, with the mapping in the same Transform | `transforms`, `JoinDefinition` | 63 | `Opportunity_Create_Account_Tasks_Joined` | Nested loops, Get Records inside a loop |
@@ -228,7 +229,7 @@ subflow for logic with one caller.
 Read the ones the task needs:
 
 - [org-conventions.md](references/org-conventions.md): the team's decisions, which outrank defaults.
-- [collections.md](references/collections.md): Filter, Sort, Transform (map, sum, count, join), bulk DML, loops.
+- [collections.md](references/collections.md): Filter, Filter Criteria resource, Sort, Transform (map, sum, count, join), bulk DML, loops.
 - [screens.md](references/screens.md): choice sets, reactive screens, validation, screen actions, embedding.
 - [record-triggered.md](references/record-triggered.md): before-save and after-save, entry conditions, asynchronous and scheduled paths, custom errors, trigger order, platform events, waits, file triggers.
 - [integration-and-security.md](references/integration-and-security.md): HTTP callouts, email, Get Records options, running context, fault paths, subflows, hard-coded IDs.

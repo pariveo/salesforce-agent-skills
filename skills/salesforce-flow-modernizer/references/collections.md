@@ -13,7 +13,8 @@
 Examples: `Opportunity_Create_Followup_Tasks` (Filter, Sum, Count, Map, one
 Create), `Opportunity_Create_Account_Tasks_Joined` (join),
 `Account_Before_Save_Count_Contacts` (before-save count),
-`Opportunity_Allocate_Budget_Waterfall` (Sort and a declared loop).
+`Opportunity_Allocate_Budget_Waterfall` (Sort and a declared loop),
+`Opportunity_Create_Task_Next_Closing` (Collection Filter Criteria resource).
 
 ## Collection Filter
 
@@ -55,8 +56,8 @@ matches, and returns the first matching record. Unlike the Collection Filter
 element, it returns a single record, so later elements such as a Decision
 reference it and its fields directly, with no Assignment or loop in between.
 On records that contain related records, such as an Apex-defined type, it can
-also filter on child relationships (release note). The decision table has no
-row for it yet.
+also filter on child relationships (release note). Example:
+`Opportunity_Create_Task_Next_Closing`.
 
 A Winter '27 scratch org (API 68.0) showed the rest, in a flow built in Flow
 Builder, retrieved, redeployed and run on 2026-10-25:
@@ -77,10 +78,22 @@ Builder, retrieved, redeployed and run on 2026-10-25:
   66.0". A check-only deploy accepted the flow's own `apiVersion` down to
   50.0.
 
-The Metadata API reference for API 68.0 still lists `collectionFilterCriteria`
-as reserved for future use and documents none of its fields
-([Flow, Metadata API Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)),
-so the shape below comes from the retrieve alone.
+The example, deployed and run on a Winter '27 scratch org (API 68.0) on
+2026-11-14, added this:
+
+- A filter's right value can reference a flow variable
+  (`<elementReference>`). Against the currency field `Amount`, a Number
+  variable and a number constant both worked. A Currency variable deployed,
+  and every run then failed with an internal "Salesforce System Error",
+  with or without a matching record. Use a Number variable.
+- Sorting on a date field (`CloseDate`) returned the earliest match, and a
+  formula and Create Records read the resource's fields.
+
+The Metadata API reference for API 68.0 still describes `collectionFilterCriteria`
+as "Reserved for future use". It lists the fields of
+`FlowCollectionFilterCriteria` with their types but without descriptions
+([Flow, Metadata API Developer Guide](https://developer.salesforce.com/docs/platform/api-metadata/references/meta-types/metadata-flow.html)),
+so the values below come from the retrieve.
 
 ```xml
 <collectionFilterCriteria>

@@ -15,6 +15,17 @@ version instead.
 
 ## [Unreleased]
 
+### Added
+
+- **The decision table recommends the Collection Filter Criteria resource**
+  (Winter '27, API 68.0) to find one record in a collection: the first match
+  after a sort, referenced directly by later elements, in place of a loop that
+  keeps the first match. A new example, `Opportunity_Create_Task_Next_Closing`,
+  was deployed and run on a Winter '27 scratch org, and a new eval case,
+  `filter-criteria-first-match`, checks it. `references/collections.md`
+  adds what the run showed: a Number variable works as a filter's right value,
+  and a Currency variable deploys but fails at run time.
+
 ## [0.5.0] - 2026-10-29
 
 ### Added

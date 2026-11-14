@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pattern: Get Records -> Collection Filter Criteria resource -> Decision on the
+  resource -> Create Records with its fields.
+  - The resource is not an element: it has no connector and no <label>. It
+    returns the first matching record in the sort order, or null.
+  - Flow Builder requires at least one sort option.
+  - minAmount is a Number variable. With a Currency variable as the right
+    value, the flow deployed and then failed at run time with a system error.
+  - Later elements reference the resource and its fields directly.
+  Replaces: a Loop with a Decision and an Assignment that keeps the first
+  match, or Filter + Sort followed by a Loop to take the first item.
+  Verified: deployed and run on API 68.0 (Winter '27).
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>68.0</apiVersion>
+    <assignments>
+        <name>Assign_Fault_Message</name>
+        <label>Assign Fault Message</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>errorMessage</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.FaultMessage</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <collectionFilterCriteria>
+        <name>Next_Closing_Opportunity</name>
+        <dataType>SObject</dataType>
+        <filterCondition>And</filterCondition>
+        <filterOptions>
+            <leftValueReference>Get_Open_Opportunities.Amount</leftValueReference>
+            <objectFieldName>Amount</objectFieldName>
+            <objectReferencePath>Get_Open_Opportunities</objectReferencePath>
+            <operator>GreaterThanOrEqualTo</operator>
+            <rightValue>
+                <elementReference>minAmount</elementReference>
+            </rightValue>
+        </filterOptions>
+        <isGroupedConditions>false</isGroupedConditions>
+        <objectReferencePath>Get_Open_Opportunities</objectReferencePath>
+        <sortOptions>
+            <nullsFirst>false</nullsFirst>
+            <objectReferencePath>Get_Open_Opportunities</objectReferencePath>
+            <sortField>CloseDate</sortField>
+            <sortOrder>Asc</sortOrder>
+        </sortOptions>
+        <subType>Opportunity</subType>
+    </collectionFilterCriteria>
+    <decisions>
+        <name>Dec_Match_Found</name>
+        <label>Match Found?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnectorLabel>No match</defaultConnectorLabel>
+        <rules>
+            <name>Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Next_Closing_Opportunity</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Create_Close_Task</targetReference>
+            </connector>
+            <label>Found</label>
+        </rules>
+    </decisions>
+    <description>Creates a Task on the account's open opportunity that closes next, among those with Amount at or above minAmount.</description>
+    <formulas>
+        <name>fxTaskSubject</name>
+        <dataType>String</dataType>
+        <expression>&quot;Prepare the close: &quot; &amp; {!Next_Closing_Opportunity.Name}</expression>
+    </formulas>
+    <interviewLabel>Opportunity Create Task Next Closing {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Opportunity Create Task Next Closing</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Create_Close_Task</name>
+        <label>Create Close Task</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignRecordIdToReference>taskId</assignRecordIdToReference>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <inputAssignments>
+            <field>ActivityDate</field>
+            <value>
+                <elementReference>Next_Closing_Opportunity.CloseDate</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>OwnerId</field>
+            <value>
+                <elementReference>Next_Closing_Opportunity.OwnerId</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Subject</field>
+            <value>
+                <elementReference>fxTaskSubject</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>WhatId</field>
+            <value>
+                <elementReference>Next_Closing_Opportunity.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Task</object>
+    </recordCreates>
+    <recordLookups>
+        <name>Get_Open_Opportunities</name>
+        <label>Get Open Opportunities</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Dec_Match_Found</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Assign_Fault_Message</targetReference>
+        </faultConnector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>AccountId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>accountId</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>IsClosed</field>
+            <operator>EqualTo</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Opportunity</object>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Amount</queriedFields>
+        <queriedFields>CloseDate</queriedFields>
+        <queriedFields>Name</queriedFields>
+        <queriedFields>OwnerId</queriedFields>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_Open_Opportunities</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>accountId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>errorMessage</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>minAmount</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>2</scale>
+    </variables>
+    <variables>
+        <name>taskId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+</Flow>
