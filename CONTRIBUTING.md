@@ -83,9 +83,11 @@ against data.
 ## Release reviews
 
 Each Salesforce release can add a Flow element, change a limit, move a help
-page or retire a feature, and the skill states all of these. A release review
-checks the skill against the release and the current documentation, and
-reports what has to change before anything does.
+page or retire a feature, and the skills state all of these. A release review
+checks every skill under `skills/` against the release and the current
+documentation, and reports what has to change before anything does. It's one
+review per release for the whole plugin, against the one baseline in
+`maintenance/release.json`, and each finding names the skill it concerns.
 
 Run one when a release's preview release notes are published, and again at
 general availability if the notes changed in between. In Claude Code or
@@ -93,15 +95,17 @@ Codex, ask for the `release-review` skill. It lives in `.claude/skills/`, and
 Codex finds it through `.agents/skills/`. It is a maintainer skill and isn't
 part of the plugin. It walks through these steps:
 
-- `maintenance/release.json` names the release the skill was last reviewed
-  against. `SKILL.md` and the README state the same release, and the smoke
-  test fails when they disagree.
-- The release notes of every release since then, read in a browser.
+- `maintenance/release.json` names the release the skills were last
+  reviewed against. Every `SKILL.md` and the README state the same release,
+  and the smoke test fails when they disagree.
+- The release notes of every release since then, read in a browser: the
+  Flow sections, plus each topic a skill lists under "Verify before
+  asserting".
 - `node scripts/diff-flow-schema.mjs <metadata.wsdl> --api <version>`
   compares the Flow part of an org's Metadata WSDL with the snapshot in
   `maintenance/flow-schema/`, and reports where the checker's tag lists
   differ from the schema.
-- `node scripts/source-inventory.mjs` lists every source the skill cites,
+- `node scripts/source-inventory.mjs` lists every source the skills cite,
   with each claim that cites it, and every "Not verified" mark. In a group of
   their own, it lists the help.salesforce.com and developer.salesforce.com
   pages this file cites for the maintainer scripts. This file's other links
