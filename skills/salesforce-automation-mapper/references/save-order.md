@@ -159,8 +159,11 @@ summaries, so workflow rules, processes and after-save flows don't run again
 Before and after update triggers and duplicate rules do run again. The page
 lists before-save flows among the steps that run, but in a debug log on API
 68.0 they didn't run again in the recursive save. Treat that as observed,
-not documented. A second DML statement on the record from Apex is a new
-save, not a recursive one, and runs everything again.
+not documented. Not verified: whether a process set to "Allow process to
+evaluate a record multiple times in a single save operation" evaluates the
+record again in that recursive save, as that option's page says it can when
+a process updates the record. A second DML statement on the record from
+Apex is a new save, not a recursive one, and runs everything again.
 <!-- /shared:after-save-rerun -->
 
 Observed on a create that met a workflow rule, a process and a create-only
@@ -181,10 +184,15 @@ it from the order and say that you did.
   in rule 3, so a trigger that writes the field each time wins over the
   flows, the workflow field updates, the processes and the after-save flows.
   A workflow field update comes after the before-save flows, a process's
-  update after the workflow, and an after-save flow's update after both.
-- **Not again in the same save.** Before-save flows, workflow rules,
-  processes and after-save flows don't run in the extra saves of rule 3, so
-  none of them overwrites a value that a later step wrote in the same save.
+  update after the workflow, and an after-save flow's update after both. A
+  workflow rule that fires on re-evaluation (rule 3) is the exception: in
+  the debug log above it ran after the process, so its field update wins
+  over the process's. Treat that as observed.
+- **Not again in the same save.** Before-save flows, processes and
+  after-save flows don't run in the extra saves of rule 3, and a workflow
+  rule runs again only when a field update re-evaluates the rules and it
+  hasn't fired yet in the save. So apart from such a rule, none of them
+  overwrites a value that a later step wrote in the same save.
 - **A later save.** Automation that runs on every save writes again on the
   next one: a before-save flow without "only when updated to meet", an Apex
   trigger, an `onAllChanges` workflow rule, a process node without "only

@@ -122,7 +122,8 @@ the rows the conventions table would need for this object.
 ## Not in this project
 <automation from installed packages; metadata that was never retrieved;
 validation, duplicate and assignment rules where the project lacks them;
-Apex classes a trigger calls; Flow Trigger Explorer for the org's own view>
+Apex classes and subflows that a trigger, flow or process calls; Flow
+Trigger Explorer for the org's own view>
 
 ## Open decisions
 <rows for the "Order and coexistence on shared objects" table | "No conventions file found">

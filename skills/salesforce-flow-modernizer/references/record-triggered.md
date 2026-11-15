@@ -80,8 +80,11 @@ summaries, so workflow rules, processes and after-save flows don't run again
 Before and after update triggers and duplicate rules do run again. The page
 lists before-save flows among the steps that run, but in a debug log on API
 68.0 they didn't run again in the recursive save. Treat that as observed,
-not documented. A second DML statement on the record from Apex is a new
-save, not a recursive one, and runs everything again.
+not documented. Not verified: whether a process set to "Allow process to
+evaluate a record multiple times in a single save operation" evaluates the
+record again in that recursive save, as that option's page says it can when
+a process updates the record. A second DML statement on the record from
+Apex is a new save, not a recursive one, and runs everything again.
 <!-- /shared:after-save-rerun -->
 
 The checker flags such an update (FLOW005). When it is unavoidable

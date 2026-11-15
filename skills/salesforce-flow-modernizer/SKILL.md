@@ -67,7 +67,8 @@ it. Create and update with "only when updated to meet the condition" fires
 on such a create, while update-only does not. If the requirement does not say, ask or state the
 assumption ([record-triggered.md](references/record-triggered.md)). Before you build or change a
 record-triggered flow, have the `salesforce-automation-mapper` skill list
-what else runs on the object and in which order. Who runs it (user, system,
+what else runs on the object and in which order. If that skill isn't
+installed, say so and that the order wasn't checked. Who runs it (user, system,
 agent). What must happen synchronously. For screen flows, the surface that
 embeds it and what it takes in and hands back.
 
