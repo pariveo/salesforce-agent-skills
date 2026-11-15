@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { bareMentions } from './mentions.mjs';
 
@@ -15,8 +15,15 @@ const check = (ok, message) => {
   if (!ok) failures.push(message);
 };
 
-const SKILL = 'salesforce-flow-modernizer';
-const skillDir = join(root, 'skills', SKILL);
+// The plugin skills are the folders under skills/ that hold a SKILL.md. Only
+// the core skill ships the checker, the README stamp and the hook.
+const CORE = 'salesforce-flow-modernizer';
+const skillsRoot = join(root, 'skills');
+const skills = readdirSync(skillsRoot, { withFileTypes: true })
+  .filter((d) => d.isDirectory() && existsSync(join(skillsRoot, d.name, 'SKILL.md')))
+  .map((d) => d.name)
+  .sort();
+const coreDir = join(skillsRoot, CORE);
 
 const readJson = (path) => JSON.parse(readFileSync(join(root, path), 'utf8'));
 
@@ -40,47 +47,88 @@ check(
   'mentions.mjs does not find exactly the bare mention outside code and comments',
 );
 
-// Codex discovery symlink
-const linkPath = join(root, '.agents/skills', SKILL);
-check(existsSync(linkPath), `.agents/skills/${SKILL} is missing`);
-if (existsSync(linkPath)) {
-  const target = resolve(dirname(linkPath), readlinkSync(linkPath));
-  check(target === skillDir, `.agents/skills/${SKILL} points at ${target}`);
-}
+// Release baseline, which every SKILL.md is stamped with
+const baseline = readJson('maintenance/release.json');
+check(/^(Spring|Summer|Winter) '\d\d$/.test(baseline.release ?? ''), `maintenance/release.json has no release like "Winter '27"`);
+check(Number.isInteger(baseline.apiVersion), 'maintenance/release.json has no integer apiVersion');
+check(/^\d{4}-\d{2}-\d{2}$/.test(baseline.reviewedOn ?? ''), 'maintenance/release.json has no reviewedOn date');
+const flat = (text) => text.replace(/\s+/g, ' ');
+const stamp = `last reviewed against ${baseline.release} (API ${baseline.apiVersion}.0)`;
 
-// SKILL.md frontmatter, size, and one-level links
-const skillMd = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
-const frontmatter = skillMd.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
-check(new RegExp(`^name: ${SKILL}$`, 'm').test(frontmatter), 'SKILL.md frontmatter name does not match the folder');
-check(/^description: >?/m.test(frontmatter), 'SKILL.md frontmatter has no description');
-const description = frontmatter.split(/^description: >?\s*$/m)[1]?.replace(/\s+/g, ' ').trim() ?? '';
-check(description.length > 0 && description.length <= 1024, `SKILL.md description is ${description.length} characters (limit 1024)`);
-check(skillMd.split('\n').length <= 250, 'SKILL.md exceeds 250 lines; move detail into references/');
+// A frontmatter value, inline or as an indented block after `key: >` or `key: |`
+const field = (frontmatter, key) => {
+  const match = frontmatter.match(new RegExp(`^${key}:[ \\t]*(.*)((?:\\n[ \\t]+.*)*)`, 'm'));
+  if (!match) return undefined;
+  const value = /^([>|][+-]?)?$/.test(match[1].trim()) ? match[2] : match[1] + match[2];
+  return value.replace(/\s+/g, ' ').trim().replace(/^(["'])(.*)\1$/, '$2');
+};
+const exampleFlowsOf = (dir) =>
+  existsSync(join(dir, 'examples', 'flows')) ? readdirSync(join(dir, 'examples', 'flows')).filter((f) => f.endsWith('.flow-meta.xml')) : [];
 
-const references = readdirSync(join(skillDir, 'references')).filter((f) => f.endsWith('.md'));
-for (const ref of references) {
-  check(skillMd.includes(`](references/${ref})`), `SKILL.md does not link references/${ref}`);
-}
-for (const [, link] of skillMd.matchAll(/\]\((references\/[^)]+)\)/g)) {
-  check(existsSync(join(skillDir, link)), `SKILL.md links missing ${link}`);
-}
+check(skills.includes(CORE), `skills/${CORE} has no SKILL.md`);
+for (const name of skills) {
+  const dir = join(skillsRoot, name);
+  const at = `skills/${name}`;
 
-// Examples: every file referenced from SKILL.md and vice versa, each verified and checker-clean
-const exampleFlows = readdirSync(join(skillDir, 'examples', 'flows')).filter((f) => f.endsWith('.flow-meta.xml'));
-for (const file of exampleFlows) {
-  const apiName = file.replace('.flow-meta.xml', '');
-  const xml = readFileSync(join(skillDir, 'examples', 'flows', file), 'utf8');
-  check(/Verified: deployed/.test(xml), `example ${file} has no "Verified:" line in its header comment`);
-  if (apiName !== 'Account_Count_Open_Opportunities') {
-    check(skillMd.includes(`\`${apiName}\``), `example ${apiName} is not referenced in SKILL.md`);
+  // Codex discovery symlink
+  const linkPath = join(root, '.agents/skills', name);
+  check(existsSync(linkPath), `.agents/skills/${name} is missing`);
+  if (existsSync(linkPath)) {
+    const target = resolve(dirname(linkPath), readlinkSync(linkPath));
+    check(target === dir, `.agents/skills/${name} points at ${target}`);
+  }
+
+  // SKILL.md frontmatter, size and stamp
+  const skillMd = readFileSync(join(dir, 'SKILL.md'), 'utf8');
+  const frontmatter = skillMd.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+  const skillName = field(frontmatter, 'name') ?? '';
+  check(skillName === name, `${at}/SKILL.md frontmatter name "${skillName}" does not match the folder`);
+  check(skillName.length >= 1 && skillName.length <= 64, `${at}/SKILL.md name is ${skillName.length} characters (1 to 64)`);
+  check(/^[a-z0-9]+(-[a-z0-9]+)*$/.test(skillName), `${at}/SKILL.md name "${skillName}" is not lowercase words joined by single hyphens`);
+  const description = field(frontmatter, 'description') ?? '';
+  check(description.length > 0, `${at}/SKILL.md frontmatter has no description`);
+  check(description.length <= 1024, `${at}/SKILL.md description is ${description.length} characters (limit 1024)`);
+  check(skillMd.split('\n').length <= 250, `${at}/SKILL.md exceeds 250 lines; move detail into references/`);
+  check(flat(skillMd).includes(stamp), `${at}/SKILL.md does not say it was ${stamp}`);
+
+  // SKILL.md links every reference, and every relative link resolves inside skills/
+  const references = existsSync(join(dir, 'references')) ? readdirSync(join(dir, 'references')).filter((f) => f.endsWith('.md')).sort() : [];
+  for (const ref of references) {
+    check(skillMd.includes(`](references/${ref})`), `${at}/SKILL.md does not link references/${ref}`);
+  }
+  for (const doc of ['SKILL.md', ...references.map((ref) => `references/${ref}`)]) {
+    const prose = readFileSync(join(dir, doc), 'utf8').replace(/```[\s\S]*?```/g, '');
+    for (const [, link] of prose.matchAll(/\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
+      if (/^([a-z][a-z0-9+.-]*:|#)/i.test(link)) continue;
+      const target = resolve(dirname(join(dir, doc)), link.split('#')[0]);
+      const inside = target.startsWith(skillsRoot + sep);
+      check(inside, `${at}/${doc} links ${link}, which is outside skills/`);
+      if (inside) check(existsSync(target), `${at}/${doc} links missing ${link}`);
+    }
+  }
+
+  // Examples: every file referenced from SKILL.md and vice versa, each verified
+  const exampleFlows = exampleFlowsOf(dir);
+  for (const file of exampleFlows) {
+    const apiName = file.replace('.flow-meta.xml', '');
+    const xml = readFileSync(join(dir, 'examples', 'flows', file), 'utf8');
+    check(/Verified: deployed/.test(xml), `${at} example ${file} has no "Verified:" line in its header comment`);
+    if (apiName !== 'Account_Count_Open_Opportunities') {
+      check(skillMd.includes(`\`${apiName}\``), `${at} example ${apiName} is not referenced in SKILL.md`);
+    }
+  }
+  if (existsSync(join(dir, 'examples', 'flows'))) {
+    for (const [, apiName] of skillMd.matchAll(/`([A-Z][A-Za-z]+(?:_[A-Z][A-Za-z]*)+)`/g)) {
+      if (/^(Object|Type)_/.test(apiName) || !/_(Create|Before|Closed|Event|Wait|Order|Check|Get|Allocate|Count)/.test(apiName)) continue;
+      check(exampleFlows.includes(`${apiName}.flow-meta.xml`), `${at}/SKILL.md names example ${apiName}, which does not exist`);
+    }
   }
 }
-for (const [, apiName] of skillMd.matchAll(/`([A-Z][A-Za-z]+(?:_[A-Z][A-Za-z]*)+)`/g)) {
-  if (/^(Object|Type)_/.test(apiName) || !/_(Create|Before|Closed|Event|Wait|Order|Check|Get|Allocate|Count)/.test(apiName)) continue;
-  check(exampleFlows.includes(`${apiName}.flow-meta.xml`), `SKILL.md names example ${apiName}, which does not exist`);
-}
 
-const checker = join(skillDir, 'scripts', 'check-flow.mjs');
+// Core skill: its examples are checker-clean
+const coreMd = readFileSync(join(coreDir, 'SKILL.md'), 'utf8');
+const coreExampleFlows = exampleFlowsOf(coreDir);
+const checker = join(coreDir, 'scripts', 'check-flow.mjs');
 const runChecker = (...args) => {
   const result = spawnSync(process.execPath, [checker, '--json', ...args], { encoding: 'utf8' });
   try {
@@ -90,9 +138,9 @@ const runChecker = (...args) => {
   }
 };
 
-const exampleRun = runChecker('--api', '67', join(skillDir, 'examples', 'flows'));
+const exampleRun = runChecker('--api', '67', join(coreDir, 'examples', 'flows'));
 check(exampleRun.status === 0, 'check-flow reports ERRORs on the examples');
-check(exampleRun.results.length === exampleFlows.length, 'check-flow did not read every example');
+check(exampleRun.results.length === coreExampleFlows.length, 'check-flow did not read every example');
 
 // The checker must keep catching the legacy fixture's planted problems
 const fixture = join(root, 'evals', 'audit-legacy-flow', 'fixtures', 'Opportunity_Legacy_Rollup.flow-meta.xml');
@@ -173,15 +221,8 @@ try {
   rmSync(scratch, { recursive: true, force: true });
 }
 
-// Release baseline in SKILL.md and the README
-const baseline = readJson('maintenance/release.json');
-check(/^(Spring|Summer|Winter) '\d\d$/.test(baseline.release ?? ''), `maintenance/release.json has no release like "Winter '27"`);
-check(Number.isInteger(baseline.apiVersion), 'maintenance/release.json has no integer apiVersion');
-check(/^\d{4}-\d{2}-\d{2}$/.test(baseline.reviewedOn ?? ''), 'maintenance/release.json has no reviewedOn date');
-const flat = (text) => text.replace(/\s+/g, ' ');
-const stamp = `last reviewed against ${baseline.release} (API ${baseline.apiVersion}.0)`;
-check(flat(skillMd).includes(stamp), `SKILL.md does not say it was ${stamp}`);
-check(flat(skillMd).includes(`or ${baseline.apiVersion}.0 when that is missing`), `SKILL.md step 2 does not fall back to ${baseline.apiVersion}.0`);
+// Release baseline in the core SKILL.md's step 2 and the README
+check(flat(coreMd).includes(`or ${baseline.apiVersion}.0 when that is missing`), `skills/${CORE}/SKILL.md step 2 does not fall back to ${baseline.apiVersion}.0`);
 check(flat(readFileSync(join(root, 'README.md'), 'utf8')).includes(stamp), `README.md does not say the skill was ${stamp}`);
 
 // Maintainer skill and its Codex symlink
@@ -332,7 +373,7 @@ const runHook = (filePath) => {
 };
 
 const flowOut = runHook('/repo/force-app/main/default/flows/Case_Set_Priority.flow-meta.xml');
-check(flowOut.includes(SKILL), 'hook stays silent on a flows/ path');
+check(flowOut.includes(CORE),'hook stays silent on a flows/ path');
 check(runHook('/repo/force-app/main/default/classes/CaseService.cls') === '', 'hook speaks on a classes/ path');
 check(runHook('/repo/README.md') === '', 'hook speaks on a non-sfdx path');
 

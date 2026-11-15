@@ -1,24 +1,30 @@
 #!/usr/bin/env node
-// Lists every source the skill cites with the claims that cite it, plus the
-// "Not verified" marks and the releases named, as a release review checklist.
+// Lists every source the plugin skills cite with the claims that cite it, plus
+// the "Not verified" marks and the releases named, as a release review checklist.
 // The official pages CONTRIBUTING.md cites for the maintainer scripts get a
 // group of their own, so they aren't read as skill claims.
 //
 //   node scripts/source-inventory.mjs [--json]
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const skillDir = join(root, 'skills', 'salesforce-flow-modernizer');
+const skillsRoot = join(root, 'skills');
 const OFFICIAL = new Set(['help.salesforce.com', 'developer.salesforce.com']);
 
-const files = [
-  join(skillDir, 'SKILL.md'),
-  ...readdirSync(join(skillDir, 'references')).filter((f) => f.endsWith('.md')).sort().map((f) => join(skillDir, 'references', f)),
-  ...readdirSync(join(skillDir, 'examples', 'flows')).sort().map((f) => join(skillDir, 'examples', 'flows', f)),
-];
+// Every folder under skills/ with a SKILL.md, and its references and examples where they exist
+const listed = (dir, keep = () => true) => (existsSync(dir) ? readdirSync(dir).filter(keep).sort().map((f) => join(dir, f)) : []);
+const files = readdirSync(skillsRoot, { withFileTypes: true })
+  .filter((d) => d.isDirectory() && existsSync(join(skillsRoot, d.name, 'SKILL.md')))
+  .map((d) => join(skillsRoot, d.name))
+  .sort()
+  .flatMap((skillDir) => [
+    join(skillDir, 'SKILL.md'),
+    ...listed(join(skillDir, 'references'), (f) => f.endsWith('.md')),
+    ...listed(join(skillDir, 'examples', 'flows')),
+  ]);
 
 const START = /^\s*(?:[-*] |\d+\. |\||#|```)/;
 // The paragraph, list item or table row around a line, cut to 280 characters around `needle`
@@ -52,7 +58,7 @@ const releases = new Map();
 const apis = new Map();
 
 for (const file of files) {
-  const path = relative(skillDir, file);
+  const path = relative(skillsRoot, file);
   let source = readFileSync(file, 'utf8');
   // Example flows: only the header comment is prose
   if (file.endsWith('.xml')) source = source.match(/<!--([\s\S]*?)-->/)?.[1] ?? '';
@@ -106,7 +112,7 @@ const out = [
   `Baseline: ${baseline.release} (API ${baseline.apiVersion}.0), reviewed ${baseline.reviewedOn}.`,
   `${official.length} official sources, ${citations.length} citations, ${unverified.length} "Not verified" marks.`,
   `${result.maintainerSources.length} official sources for the maintainer scripts, ${maintainerCitations.length} citations.`,
-  'Skill paths are relative to skills/salesforce-flow-modernizer/.',
+  'Skill paths are relative to skills/.',
   '',
   '## Official sources',
   '',

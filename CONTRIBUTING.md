@@ -31,9 +31,9 @@ turns into a wrong flow.
   developer.salesforce.com, or a deploy result from an example. Mark anything
   you couldn't verify as unverified. Don't state availability, limits, GA
   status or deprecations from memory.
-- `SKILL.md` stays at or under 250 lines. The decision table and the escape
-  conditions belong there, and detail goes into `references/`. The smoke test
-  enforces the limit.
+- Each `SKILL.md` stays at or under 250 lines. The decision table and the
+  escape conditions belong there, and detail goes into `references/`. The
+  smoke test enforces the limit.
 - Examples use standard objects and `example.com` addresses, with no customer,
   employer or org names and no record IDs.
 - `references/org-conventions.md` ships with every slot unset. Fill it in
@@ -129,9 +129,12 @@ Run the smoke test:
 node scripts/smoke-test.mjs
 ```
 
-It checks the manifests, the Codex symlink, the skill's frontmatter and links,
-the examples against the checker, the checker against the legacy fixture, the
-release baseline and the review scripts against the skill, the deploy command
+It checks the manifests and then every folder under `skills/` that holds a
+`SKILL.md`: its Codex symlink, its frontmatter name and description, its
+length, its links to `references/` and to sibling skills, its examples and its
+release stamp. It then checks the core skill's examples against the checker,
+the checker against the legacy fixture, the release baseline and the review
+scripts against the core skill, the deploy command
 `validate-examples.mjs` runs, the release and release notes scripts on a
 copy of the manifests and changelog, bare `@` mentions in the changelog, the eval suite's shape, the hook's behaviour, and
 the code comments. CI runs the same script.
