@@ -113,7 +113,7 @@ Months from org API 56). Negative offsets run before the date
 - Org limit: 250,000 scheduled-path interviews per 24 hours, or 200 per user
   licence, whichever is greater ([Scheduled Paths](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_scheduled_path.htm&type=5)).
 - A failed path is retried up to 5 times ([Scheduled Paths](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_scheduled_path.htm&type=5)). Pending work shows on the
-  Time-Based Automation page in Setup.
+  Time-Based Automations page in Setup.
 - No documented maximum number of scheduled paths per flow (21 deployed on a
   draft, not tested on activation).
 

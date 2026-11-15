@@ -149,16 +149,49 @@ Source for this section unless linked otherwise:
 
 ## Troubleshooting a deployed flow
 
-- Flow Builder Debug: run with a chosen record and running user to see the
-  path and every element's values.
-- Paused and Failed Flow Interviews in Setup: failures with their messages,
-  and interviews waiting in Wait elements or screens.
-- Scheduled-path work waits on the Time-Based Automation page until its
-  time.
-- Flow error emails go to the configured error recipient, so make sure it is
-  a monitored inbox.
-- Debug logs for the running user capture record-triggered execution. Platform
-  event-triggered flows log under the Automated Process user.
+- Flow Builder Debug shows the path a run takes and each element's values.
+  Autolaunched and record-triggered flows use Test Mode instead, which is
+  turned on with Flow Test Mode in Process Automation Settings
+  ([Flow Builder Debugger](https://help.salesforce.com/s/articleView?id=platform.flow_test_debug.htm&type=5),
+  [Test Mode](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_test_mode.htm&release=264&type=5)).
+  Debugging as another user works only in a sandbox. A record-triggered flow
+  always debugs in rollback mode, and the debug run leaves out the record's
+  other automation, so a flow can pass in debug and still fail at run time
+  ([Debugger Considerations](https://help.salesforce.com/s/articleView?id=platform.flow_considerations_troubleshooting.htm&type=5)).
+- Paused and Failed Flow Interviews in Setup lists interviews waiting at a
+  Wait element
+  ([Paused Flow Interview Considerations](https://help.salesforce.com/s/articleView?id=platform.flow_considerations_design_pause.htm&type=5))
+  and screen-flow interviews a user paused on purpose
+  ([Flow Interviews](https://help.salesforce.com/s/articleView?id=platform.flow_interviews.htm&type=5)).
+  It also lists failed interviews, and a failed one opens in Flow Builder for
+  debugging
+  ([Find Failed Flows Faster](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_debug_failed_list_view.htm&release=232&type=5)).
+- The same records are queryable as `FlowInterview` with
+  `InterviewStatus = 'Error'`. `Error` holds the message, `CurrentElement`
+  the element and `FlowVersionViewId` the flow version
+  ([FlowInterview](https://developer.salesforce.com/docs/platform/object-reference/references/standard-objects/object-flowinterview.html)).
+  In a scratch org at API 68.0, `CurrentElement` named the element that
+  failed.
+- The 2021 list of flow types whose failed interviews are saved is out of
+  date. Failures of flow types it leaves out were saved too, observed in a
+  scratch org at API 68.0. Query `FlowInterview` rather than assume a flow
+  type's failures aren't kept.
+- Scheduled-path work waits on the Time-Based Automations page in Setup
+  until its time
+  ([Scheduled Paths](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_scheduled_path.htm&type=5)).
+- The flow error email goes to the user who last modified the flow, or to
+  the Apex exception email recipients when Process Automation Settings says
+  so. It includes the flow's data, user-entered data among it, so the
+  recipient has to be a monitored inbox that may see that data
+  ([error email recipients](https://help.salesforce.com/s/articleView?id=platform.flow_troubleshoot_error_email.htm&type=5)).
+- Debug logs for the running user capture record-triggered execution,
+  observed in a scratch org at API 68.0. Platform event-triggered flows and
+  interviews resumed by a platform event log under the Automated Process
+  user, but run as the user who published the event
+  ([platform event flows](https://developer.salesforce.com/docs/platform/platform-events/guide/platform-events-subscribe-flow.html)).
+  In a scratch org at API 68.0, the `FlowInterview` record of a failed
+  platform event-triggered interview named the publishing user as its
+  creator.
 
 ## Review checklist
 
