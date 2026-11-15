@@ -39,6 +39,17 @@ version instead.
   Codex asks you to review and trust the changed hook again after the
   update. The Codex install instructions explain the trust prompt.
 
+### Fixed
+
+- The troubleshooting notes in `references/delivery.md` match the current
+  documentation, each with its source. Autolaunched and record-triggered
+  flows use Test Mode instead of Debug, the Setup list holds interviews
+  waiting at a Wait element or paused by a user rather than every open
+  screen, failed interviews are queryable as `FlowInterview`, and the
+  error email goes to the flow's last modifier or the Apex exception
+  recipients. The Setup page is named Time-Based Automations, here and in
+  `references/record-triggered.md`.
+
 ## [0.5.0] - 2026-10-29
 
 ### Added
