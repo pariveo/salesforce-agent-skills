@@ -119,16 +119,14 @@ function conditionsOf(start) {
   return filters.length === 1 ? filters[0] : `${logic}: ${filters.join('; ')}`;
 }
 
-// The scheduled and asynchronous paths that reach each element. An element the
-// start's own connector reaches runs in the save and gets no entry.
-function afterCommitPaths(flow) {
-  const start = kid(flow, 'start');
+// The elements reachable from a flow element along its connectors, the element included.
+function flowReach(flow) {
   const edges = new Map();
   for (const el of flow.children) {
     const name = text(el, 'name');
     if (name && el.name !== 'start') edges.set(name, descendants(el, 'targetReference').map((t) => t.text.trim()));
   }
-  const reach = (from) => {
+  return (from) => {
     const seen = new Set();
     const queue = [from];
     while (queue.length) {
@@ -139,6 +137,12 @@ function afterCommitPaths(flow) {
     }
     return seen;
   };
+}
+
+// The scheduled and asynchronous paths that reach each element. An element the
+// start's own connector reaches runs in the save and gets no entry.
+function afterCommitPaths(flow, reach) {
+  const start = kid(flow, 'start');
   const inSave = reach(text(kid(start, 'connector'), 'targetReference'));
   const paths = new Map();
   for (const p of kids(start, 'scheduledPaths')) {
@@ -163,7 +167,8 @@ const flowCalls = (flow) => [
 // Records on $Record or its Id after save, and through record variables.
 function flowWrites(flow, { recordVar, beforeSave }) {
   const writes = new Map();
-  const paths = afterCommitPaths(flow);
+  const reach = flowReach(flow);
+  const paths = afterCommitPaths(flow, reach);
   const add = (field, how, element) => {
     const later = paths.get(element);
     if (!writes.has(field)) writes.set(field, new Set());
@@ -173,8 +178,11 @@ function flowWrites(flow, { recordVar, beforeSave }) {
     ...kids(flow, 'variables').filter((v) => text(v, 'dataType') === 'SObject' && sameObject(text(v, 'objectType'))).map((v) => text(v, 'name')),
     ...kids(flow, 'recordLookups').filter((l) => text(l, 'storeOutputAutomatically') === 'true' && sameObject(text(l, 'object'))).map((l) => text(l, 'name')),
   ]);
-  const assignedTo = (variable) =>
-    descendants(flow, 'assignmentItems')
+  // Fields assigned on a variable by assignments from which the update element can be reached
+  const assignedTo = (variable, update) =>
+    kids(flow, 'assignments')
+      .filter((a) => reach(text(a, 'name')).has(update))
+      .flatMap((a) => kids(a, 'assignmentItems'))
       .map((i) => text(i, 'assignToReference'))
       .filter((t) => t.startsWith(`${variable}.`))
       .map((t) => t.slice(variable.length + 1));
@@ -194,11 +202,11 @@ function flowWrites(flow, { recordVar, beforeSave }) {
     const byOwnId = filters.some((f) => text(f, 'field') === 'Id' && text(kid(f, 'value'), 'elementReference') === `${recordVar}.Id`);
     if (input === recordVar || (sameObject(text(update, 'object')) && byOwnId)) {
       // Without field values of its own, Update Records saves what assignments put on $Record
-      for (const field of fields.length ? fields : assignedTo(recordVar)) add(field, `Update Records ${element} on the triggering record`, element);
+      for (const field of fields.length ? fields : assignedTo(recordVar, element)) add(field, `Update Records ${element} on the triggering record`, element);
     } else if (sameObject(text(update, 'object'))) {
       for (const field of fields) add(field, `Update Records ${element} on other ${objectName} records`, element);
     } else if (objectVars.has(input)) {
-      for (const field of assignedTo(input)) add(field, `Update Records ${element} through variable ${input}`, element);
+      for (const field of assignedTo(input, element)) add(field, `Update Records ${element} through variable ${input}`, element);
     }
   }
   for (const create of kids(flow, 'recordCreates')) {
@@ -358,7 +366,7 @@ for (const file of files.filter((f) => f.endsWith('.trigger'))) {
   const writes = new Map();
   // Field assignments on Trigger.new[i] or on a variable of the object's type
   for (const [, receiver, field] of code.matchAll(/(\bTrigger\s*\.\s*new\s*\[[^\]]*\]|\b[A-Za-z_]\w*)\s*\.\s*([A-Za-z_]\w*)\s*(?:\+|-)?=(?!=)/gi)) {
-    if (!/^trigger/i.test(receiver) && !typed.has(receiver.toLowerCase())) continue;
+    if (!/^trigger\s*\.\s*new\s*\[/i.test(receiver) && !typed.has(receiver.toLowerCase())) continue;
     if (!writes.has(field)) writes.set(field, new Set());
     writes.get(field).add(`assignment in the trigger body (pattern match on ${objectName} variables and Trigger.new, not parsed)`);
   }

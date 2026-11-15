@@ -192,7 +192,11 @@ it from the order and say that you did.
   after-save flows don't run in the extra saves of rule 3, and a workflow
   rule runs again only when a field update re-evaluates the rules and it
   hasn't fired yet in the save. So apart from such a rule, none of them
-  overwrites a value that a later step wrote in the same save.
+  overwrites a value that a later step wrote in the same save. A process
+  set to "Allow process to evaluate a record multiple times in a single
+  save operation" may be another exception (rule 2). Not verified: whether
+  it evaluates the record again in these saves, so say the end value
+  depends on it.
 - **A later save.** Automation that runs on every save writes again on the
   next one: a before-save flow without "only when updated to meet", an Apex
   trigger, an `onAllChanges` workflow rule, a process node without "only
