@@ -202,9 +202,16 @@ A conventions file is the smallest version of a harness, the set of skills,
 hooks and review gates around a coding agent that tells it what an org's
 structure means. A harness for one org also holds skills built on the team's
 own trigger framework and permission model, guardrail hooks, review gates
-before deploy, and a worked example built in that org.
-[Pariveo](https://pariveo.eu) helps Salesforce teams build theirs, starting
-with an assessment of how well an org serves as context for AI agents.
+before deploy, and a worked example built in that org. Its building blocks
+are specs that keep the business requirement apart from the technical design,
+skills the agent loads when a task fits them, rules that apply to every task,
+subagents that take on a subtask in their own context, and hooks that run as
+guardrails before or after an action. [Pariveo](https://pariveo.eu) sets up
+such a harness together with a team's admins and developers in
+[workshops](https://pariveo.eu/services/agentic-coding-workshops), for Claude
+Code or Codex, and the team develops it further on its own. Pariveo recommends
+an assessment of how well the org serves as context for AI agents as a first
+look, so the harness starts from what the org already has.
 
 ## Evals
 
