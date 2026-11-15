@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { bareMentions } from './mentions.mjs';
 
@@ -122,6 +122,126 @@ for (const name of skills) {
       if (/^(Object|Type)_/.test(apiName) || !/_(Create|Before|Closed|Event|Wait|Order|Check|Get|Allocate|Count)/.test(apiName)) continue;
       check(exampleFlows.includes(`${apiName}.flow-meta.xml`), `${at}/SKILL.md names example ${apiName}, which does not exist`);
     }
+  }
+}
+
+// Shared blocks: the core skill holds each one once, and every copy in another
+// skill matches it character for character.
+const markdownOf = (dir) => [
+  join(dir, 'SKILL.md'),
+  ...(existsSync(join(dir, 'references')) ? readdirSync(join(dir, 'references')).filter((f) => f.endsWith('.md')).map((f) => join(dir, 'references', f)) : []),
+];
+const SHARED = /<!-- shared:([\w-]+) -->\n([\s\S]*?)<!-- \/shared:([\w-]+) -->/g;
+const sharedBlocks = (dir) =>
+  markdownOf(dir).flatMap((file) => {
+    const source = readFileSync(file, 'utf8');
+    const opens = source.match(/<!-- shared:[\w-]+ -->/g)?.length ?? 0;
+    const blocks = [...source.matchAll(SHARED)].map(([, id, body, closeId]) => ({ id, body, closeId, file: relative(root, file) }));
+    check(opens === blocks.length, `${relative(root, file)} has a shared: marker without its /shared: marker`);
+    for (const b of blocks) check(b.id === b.closeId, `${b.file} opens shared:${b.id} and closes shared:${b.closeId}`);
+    return blocks;
+  });
+const coreShared = new Map();
+for (const block of sharedBlocks(coreDir)) {
+  check(!coreShared.has(block.id), `skills/${CORE} holds shared:${block.id} more than once`);
+  coreShared.set(block.id, block.body);
+}
+for (const name of skills.filter((s) => s !== CORE)) {
+  for (const block of sharedBlocks(join(skillsRoot, name))) {
+    check(coreShared.has(block.id), `${block.file} copies shared:${block.id}, which skills/${CORE} doesn't hold`);
+    if (coreShared.has(block.id)) check(block.body === coreShared.get(block.id), `${block.file} shared:${block.id} differs from the copy in skills/${CORE}`);
+  }
+}
+
+// Automation mapper: lists the fixture project's automation and its overlaps
+const mapper = join(skillsRoot, 'salesforce-automation-mapper', 'scripts', 'map-automation.mjs');
+check(existsSync(mapper), `${relative(root, mapper)} is missing`);
+if (existsSync(mapper)) {
+  const fixtureProject = join(root, 'evals', 'fixtures', 'account-automation');
+  const runMapper = (object, dir) => {
+    const result = spawnSync(process.execPath, [mapper, '--object', object, '--project-dir', dir, '--json'], { encoding: 'utf8' });
+    try {
+      return { status: result.status, out: JSON.parse(result.stdout) };
+    } catch {
+      return { status: result.status, out: null };
+    }
+  };
+  const map = runMapper('Account', fixtureProject);
+  const byName = new Map((map.out?.items ?? []).map((i) => [i.name, i]));
+  check(map.status === 0 && byName.size === 12, `map-automation lists ${byName.size} items on the fixture's Account (expected 12)`);
+  const expectItems = {
+    Account_Before_Tag_A: { stage: 'before-save', event: 'CreateAndUpdate', triggerOrder: 10 },
+    Account_Before_Tag_Unordered: { stage: 'before-save', triggerOrder: null },
+    Account_Before_Tag_Late: { stage: 'before-save', triggerOrder: 1500 },
+    Account_After_Create_Set_Rating: { stage: 'after-save', event: 'Create', triggerOrder: 20 },
+    Account_After_Revenue_Reached: { stage: 'after-save', event: 'Update', onlyWhenUpdatedToMeet: true },
+    Account_Daily_Review: { kind: 'schedule-triggered flow', status: 'Draft' },
+    Account_Process_Banking: { kind: 'process', start: 'onAllChanges' },
+    Account_Hot_Rating: { kind: 'workflow rule', evaluation: 'onCreateOrTriggeringUpdate' },
+    Account_Flag_Hot: { kind: 'workflow rule', evaluation: 'onAllChanges' },
+    AccountTrigger: { kind: 'Apex trigger', status: 'Active' },
+  };
+  for (const [name, facts] of Object.entries(expectItems)) {
+    for (const [key, value] of Object.entries(facts)) {
+      check(byName.get(name)?.[key] === value, `map-automation reports ${name} ${key} as ${JSON.stringify(byName.get(name)?.[key])}, not ${JSON.stringify(value)}`);
+    }
+  }
+  check(byName.get('Account_Process_Banking')?.criteria?.[0]?.onlyWhenChanged === true, 'map-automation misses the process node set to only when specified changes');
+  check(/re-evaluates workflow rules/.test(byName.get('Account_Hot_Rating')?.writes?.Rating?.[0] ?? ''), 'map-automation misses the field update that re-evaluates workflow rules');
+  const writers = (field) => (map.out?.fieldWriters?.[field] ?? []).map((w) => w.split(': ')[1]).sort().join();
+  check(writers('Rating') === 'Account_After_Create_Set_Rating,Account_Before_Tag_A,Account_Hot_Rating', `map-automation lists Rating writers ${writers('Rating')}`);
+  check(writers('Type') === 'Account_Before_Tag_Late,Account_Process_Banking', `map-automation lists Type writers ${writers('Type')}`);
+  check(writers('Site') === 'Account_Flag_Hot', `map-automation lists Site writers ${writers('Site')}`);
+  const empty = runMapper('Contact', fixtureProject);
+  check(empty.status === 0 && empty.out?.items.length === 0, 'map-automation lists automation on Contact in the fixture, which has none');
+  const bare = mkdtempSync(join(tmpdir(), 'map-bare-'));
+  try {
+    mkdirSync(join(bare, 'force-app'));
+    writeFileSync(join(bare, 'sfdx-project.json'), '{"packageDirectories":[{"path":"force-app","default":true}]}');
+    const partial = runMapper('Account', bare);
+    check(partial.status === 2 && partial.out?.notes.some((n) => /No flows\/ folder.*retrieve/i.test(n)), 'map-automation does not say what to retrieve in a project without flows/');
+  } finally {
+    rmSync(bare, { recursive: true, force: true });
+  }
+
+  // Edge cases the fixture doesn't hold, in a project that sits under a folder named flows
+  const edge = join(mkdtempSync(join(tmpdir(), 'map-edge-')), 'flows', 'proj');
+  try {
+    const put = (path, body) => {
+      mkdirSync(dirname(join(edge, path)), { recursive: true });
+      writeFileSync(join(edge, path), body);
+    };
+    const flowXml = (body, start) =>
+      `<?xml version="1.0" encoding="UTF-8"?>\n<Flow xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>68.0</apiVersion>${body}<processType>AutoLaunchedFlow</processType><start>${start}<object>Account</object><recordTriggerType>Create</recordTriggerType><triggerType>RecordAfterSave</triggerType></start><status>Active</status></Flow>`;
+    const assign = (name, to, next) => `<assignments><name>${name}</name><assignmentItems><assignToReference>${to}</assignToReference><operator>Assign</operator><value><stringValue>Cold</stringValue></value></assignmentItems><connector><targetReference>${next}</targetReference></connector></assignments>`;
+    put('sfdx-project.json', '{"packageDirectories":[{"path":"force-app","default":true}]}');
+    put('force-app/triggers/T.trigger', 'trigger T on Account (before insert, after insert) {\n  Handler.hasRun = true; TriggerHandler.isRunning = true;\n  String u = \'https://example.com\'; Trigger.new[0].Type = \'Prospect\';\n  for (Account a : Trigger.new) { a.rating = \'Hot\'; }\n  Contact c = new Contact(LastName = \'x\');\n  c.Description = \'x\';\n}\n');
+    const triggerOnly = runMapper('Account', edge);
+    check(triggerOnly.status === 2 && triggerOnly.out?.notes.some((n) => /No flows\/ folder/.test(n)), 'map-automation misses the missing flows/ folder in a project under a folder named flows');
+    const dir = 'force-app/flows/';
+    put(`${dir}Assign_Then_Save.flow-meta.xml`, flowXml(`${assign('Set_Rating', '$Record.Rating', 'Save')}<recordUpdates><name>Save</name><inputReference>$Record</inputReference></recordUpdates>`, '<connector><targetReference>Set_Rating</targetReference></connector>'));
+    put(`${dir}Get_Then_Save.flow-meta.xml`, flowXml(`<recordLookups><name>Get_Parent</name><connector><targetReference>Set_Parent</targetReference></connector><object>Account</object><storeOutputAutomatically>true</storeOutputAutomatically></recordLookups>${assign('Set_Parent', 'Get_Parent.Rating', 'Save_Parent')}<recordUpdates><name>Save_Parent</name><inputReference>Get_Parent</inputReference></recordUpdates>`, '<connector><targetReference>Get_Parent</targetReference></connector>'));
+    put(`${dir}Later.flow-meta.xml`, flowXml('<actionCalls><name>Act</name><actionName>AccountSetter</actionName><actionType>apex</actionType></actionCalls><recordUpdates><name>Set_Site</name><inputAssignments><field>Site</field><value><stringValue>x</stringValue></value></inputAssignments><inputReference>$Record</inputReference></recordUpdates><subflows><name>Sub</name><flowName>Account_Sub</flowName></subflows>', '<connector><targetReference>Act</targetReference></connector><scheduledPaths><name>Day_Later</name><connector><targetReference>Set_Site</targetReference></connector><offsetNumber>1</offsetNumber><offsetUnit>Days</offsetUnit><recordField>CreatedDate</recordField></scheduledPaths>'));
+    put(`${dir}Two_Paths.flow-meta.xml`, flowXml(`${assign('Set_Now', '$Record.Fax', 'Save_Now')}<recordUpdates><name>Save_Now</name><inputReference>$Record</inputReference></recordUpdates>${assign('Set_Later', '$Record.Industry', 'Save_Later')}<recordUpdates><name>Save_Later</name><inputReference>$Record</inputReference></recordUpdates>`, '<connector><targetReference>Set_Now</targetReference></connector><scheduledPaths><name>Day_Later</name><connector><targetReference>Set_Later</targetReference></connector><offsetNumber>1</offsetNumber><offsetUnit>Days</offsetUnit><recordField>CreatedDate</recordField></scheduledPaths>'));
+    put(`${dir}Process_Contacts.flow-meta.xml`, '<?xml version="1.0" encoding="UTF-8"?>\n<Flow xmlns="http://soap.sforce.com/2006/04/metadata"><processMetadataValues><name>ObjectType</name><value><stringValue>Account</stringValue></value></processMetadataValues><processType>Workflow</processType><recordUpdates><name>Update_Contacts</name><filters><field>AccountId</field><operator>EqualTo</operator><value><elementReference>myVariable_current.Id</elementReference></value></filters><inputAssignments><field>Description</field><value><stringValue>x</stringValue></value></inputAssignments><object>Contact</object></recordUpdates><status>Active</status></Flow>');
+    put('force-app/workflows/Account.workflow-meta.xml', '<Workflow><rules></Workflow>');
+    const edgeMap = runMapper('Account', edge);
+    const edgeItems = new Map((edgeMap.out?.items ?? []).map((i) => [i.name, i]));
+    const edgeWriters = (field) => (edgeMap.out?.fieldWriters?.[field] ?? []).map((w) => w.split(': ')[1]).sort().join();
+    check(edgeMap.status === 0, `map-automation exits ${edgeMap.status} on a project with an unreadable workflow file`);
+    check(edgeMap.out?.notes.some((n) => /Could not read .*Account\.workflow-meta\.xml/.test(n)), 'map-automation does not report the unreadable workflow file');
+    check(edgeWriters('Rating') === 'Assign_Then_Save,Get_Then_Save,T', `map-automation lists Rating writers ${edgeWriters('Rating')} (expected the $Record save, the Get Records save and the trigger's a.rating)`);
+    check(edgeWriters('Type') === 'T', `map-automation lists Type writers ${edgeWriters('Type')} (expected the trigger's Trigger.new[0] write after a URL string)`);
+    check(
+      edgeMap.out?.fieldWriters?.Industry?.join() === 'record-triggered flow: Two_Paths (after the commit)' && edgeMap.out?.fieldWriters?.Fax?.join() === 'record-triggered flow: Two_Paths',
+      `map-automation credits assignments to the wrong Update Records: Industry ${JSON.stringify(edgeMap.out?.fieldWriters?.Industry)}, Fax ${JSON.stringify(edgeMap.out?.fieldWriters?.Fax)}`,
+    );
+    check(!edgeMap.out?.fieldWriters?.hasRun && !edgeMap.out?.fieldWriters?.isRunning && !edgeItems.get('T')?.writes?.Description, "map-automation counts a static flag or a Contact variable's field as an Account field");
+    check(edgeWriters('Contact.Description') === 'Process_Contacts' && !edgeMap.out?.fieldWriters?.Description, 'map-automation counts a process update of related Contacts as an Account field');
+    check(/after the commit, on scheduled path Day_Later/.test(edgeItems.get('Later')?.writes?.Site?.[0] ?? ''), 'map-automation puts a scheduled path write in the save');
+    check(edgeItems.get('Later')?.calls?.join() === 'subflow Account_Sub,Apex action AccountSetter', `map-automation lists the flow's calls as ${JSON.stringify(edgeItems.get('Later')?.calls)}`);
+  } finally {
+    rmSync(dirname(dirname(edge)), { recursive: true, force: true });
   }
 }
 
@@ -349,7 +469,7 @@ if (process.platform !== 'win32') {
 
 // Eval suite: every case has a prompt and graders with a type
 const evalsDir = join(root, 'evals');
-const cases = readdirSync(evalsDir, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'results');
+const cases = readdirSync(evalsDir, { withFileTypes: true }).filter((d) => d.isDirectory() && !['results', 'fixtures'].includes(d.name));
 check(cases.length >= 8, `only ${cases.length} eval cases`);
 for (const { name } of cases) {
   const dir = join(evalsDir, name);

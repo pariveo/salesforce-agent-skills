@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>68.0</apiVersion>
+    <assignments>
+        <name>Assign_Fields</name>
+        <label>Assign Fields</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.Description</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <stringValue>|FA</stringValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>$Record.Rating</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>Warm</stringValue>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <description>Before save, trigger order 10. Appends |FA to Description and sets Rating to Warm on every save.</description>
+    <interviewLabel>Account Before Tag A {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Account Before Tag A</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Assign_Fields</targetReference>
+        </connector>
+        <object>Account</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+    <triggerOrder>10</triggerOrder>
+</Flow>

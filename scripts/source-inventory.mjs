@@ -99,45 +99,46 @@ const result = {
   apiVersions: Object.fromEntries([...apis].sort(([a], [b]) => a - b)),
 };
 
-if (process.argv.includes('--json')) {
-  console.log(JSON.stringify(result, null, 2));
-  process.exit(0);
-}
+// No process.exit after the JSON: it would cut piped output off at 64 KB.
+if (process.argv.includes('--json')) console.log(JSON.stringify(result, null, 2));
+else console.log(report().join('\n'));
 
-const official = result.sources.filter((s) => s.official);
-const other = result.sources.filter((s) => !s.official);
-const out = [
-  '# Source inventory',
-  '',
-  `Baseline: ${baseline.release} (API ${baseline.apiVersion}.0), reviewed ${baseline.reviewedOn}.`,
-  `${official.length} official sources, ${citations.length} citations, ${unverified.length} "Not verified" marks.`,
-  `${result.maintainerSources.length} official sources for the maintainer scripts, ${maintainerCitations.length} citations.`,
-  'Skill paths are relative to skills/.',
-  '',
-  '## Official sources',
-  '',
-  'Open each page once. Tick it when every claim below it still matches the page.',
-  '',
-];
-const cite = (c) => `  - ${c.file}:${c.line}${c.text ? ` [${c.text}]` : ''}: ${c.claim}`;
-for (const s of official) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
-out.push(
-  '',
-  '## Maintainer script sources',
-  '',
-  'Cited in CONTRIBUTING.md at the repository root, for the maintainer scripts. These back no skill claim. Tick each page when the command next to it still behaves as the page says.',
-  '',
-);
-if (!result.maintainerSources.length) out.push('None.');
-for (const s of result.maintainerSources) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
-out.push('', '## Other hosts', '', 'Not on help.salesforce.com or developer.salesforce.com. Keep only if no official page states the claim.', '');
-if (!other.length) out.push('None.');
-for (const s of other) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
-out.push('', '## Marked "Not verified"', '', 'Check whether an official page now states each of these.', '');
-if (!unverified.length) out.push('None.');
-for (const u of unverified) out.push(`- [ ] ${u.file}:${u.line}: ${u.claim}`);
-out.push('', '## Releases named', '');
-for (const [release, at] of Object.entries(result.releases)) out.push(`- ${release}: ${at.length} (${at.join(', ')})`);
-out.push('', '## API versions named', '');
-for (const [version, at] of Object.entries(result.apiVersions)) out.push(`- ${version}.0: ${at.length} (${at.join(', ')})`);
-console.log(out.join('\n'));
+function report() {
+  const official = result.sources.filter((s) => s.official);
+  const other = result.sources.filter((s) => !s.official);
+  const out = [
+    '# Source inventory',
+    '',
+    `Baseline: ${baseline.release} (API ${baseline.apiVersion}.0), reviewed ${baseline.reviewedOn}.`,
+    `${official.length} official sources, ${citations.length} citations, ${unverified.length} "Not verified" marks.`,
+    `${result.maintainerSources.length} official sources for the maintainer scripts, ${maintainerCitations.length} citations.`,
+    'Skill paths are relative to skills/.',
+    '',
+    '## Official sources',
+    '',
+    'Open each page once. Tick it when every claim below it still matches the page.',
+    '',
+  ];
+  const cite = (c) => `  - ${c.file}:${c.line}${c.text ? ` [${c.text}]` : ''}: ${c.claim}`;
+  for (const s of official) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
+  out.push(
+    '',
+    '## Maintainer script sources',
+    '',
+    'Cited in CONTRIBUTING.md at the repository root, for the maintainer scripts. These back no skill claim. Tick each page when the command next to it still behaves as the page says.',
+    '',
+  );
+  if (!result.maintainerSources.length) out.push('None.');
+  for (const s of result.maintainerSources) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
+  out.push('', '## Other hosts', '', 'Not on help.salesforce.com or developer.salesforce.com. Keep only if no official page states the claim.', '');
+  if (!other.length) out.push('None.');
+  for (const s of other) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
+  out.push('', '## Marked "Not verified"', '', 'Check whether an official page now states each of these.', '');
+  if (!unverified.length) out.push('None.');
+  for (const u of unverified) out.push(`- [ ] ${u.file}:${u.line}: ${u.claim}`);
+  out.push('', '## Releases named', '');
+  for (const [release, at] of Object.entries(result.releases)) out.push(`- ${release}: ${at.length} (${at.join(', ')})`);
+  out.push('', '## API versions named', '');
+  for (const [version, at] of Object.entries(result.apiVersions)) out.push(`- ${version}.0: ${at.length} (${at.join(', ')})`);
+  return out;
+}

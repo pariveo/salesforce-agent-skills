@@ -1,7 +1,7 @@
 {
   "name": "salesforce-agent-skills",
   "version": "0.5.0",
-  "description": "Salesforce Flow skill for AI coding agents: builds and audits Flows with current elements instead of loop-and-decision patterns, with deploy-verified metadata examples and a checker.",
+  "description": "Salesforce skills for AI coding agents: one builds and audits Flows with current elements instead of loop-and-decision patterns, with deploy-verified metadata examples and a checker, and one lists all automation on an object and the order it runs in.",
   "author": {
     "name": "Pariveo",
     "url": "https://pariveo.eu"
@@ -14,20 +14,22 @@
     "flow",
     "modernization",
     "migration",
-    "audit"
+    "audit",
+    "automation"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Salesforce agent skills by Pariveo",
     "shortDescription": "Audit-first Salesforce Flow modernization",
-    "longDescription": "Maps every Flow requirement to its current element, writes metadata from deploy-verified examples, and checks it for legacy patterns and deploy-time errors. Audits existing Flows with ranked findings and a migration plan. Deploy-validates when the Salesforce CLI is authenticated, and writes build specs without org access.",
+    "longDescription": "Maps every Flow requirement to its current element, writes metadata from deploy-verified examples, and checks it for legacy patterns and deploy-time errors. Audits existing Flows with ranked findings and a migration plan. Deploy-validates when the Salesforce CLI is authenticated, and writes build specs without org access. A second skill lists every flow, process, workflow rule and Apex trigger on one object from the local project, and orders them by the platform's documented save order without changing anything.",
     "developerName": "Pariveo",
     "category": "Developer Tools",
     "websiteURL": "https://pariveo.eu",
     "defaultPrompt": [
       "Audit this Flow for legacy patterns",
       "Build a record-triggered Flow for renewal reminders",
-      "Review my Flow XML before I deploy it"
+      "Review my Flow XML before I deploy it",
+      "List the automation on Opportunity and the order it runs in"
     ]
   }
 }

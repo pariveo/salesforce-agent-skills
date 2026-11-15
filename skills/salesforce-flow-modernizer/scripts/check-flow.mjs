@@ -237,7 +237,7 @@ function check(m, { api }) {
       if (n.type === 'recordUpdates') {
         const selfUpdate = text(n.el, 'inputReference') === '$Record' ||
           kids(n.el, 'filters').some((f) => text(f, 'field') === 'Id' && text(kid(f, 'value'), 'elementReference') === '$Record.Id');
-        if (selfUpdate) report('ERROR', 'FLOW005', name, 'After-save update of the triggering record re-runs the save order. Set the fields in a before-save flow instead; a Sum there is a Loop declared "Escape: E3" (SKILL.md). Needing a Transform does not justify the second save.');
+        if (selfUpdate) report('ERROR', 'FLOW005', name, 'After-save update of the triggering record saves it a second time, and the Apex update triggers and duplicate rules run again (record-triggered.md). Set the fields in a before-save flow instead; a Sum there is a Loop declared "Escape: E3" (SKILL.md). Needing a Transform does not justify the second save.');
       }
       if (n.type === 'actionCalls') {
         report('WARNING', 'FLOW014', name, 'Action on the synchronous after-save path. Callouts, emails and notifications belong on the asynchronous path unless a later element needs the result (escape E4).');

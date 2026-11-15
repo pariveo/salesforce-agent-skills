@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>68.0</apiVersion>
+    <assignments>
+        <name>Assign_Fields</name>
+        <label>Assign Fields</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.Description</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <stringValue>|FU</stringValue>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <description>Before save, no trigger order. Appends |FU to Description.</description>
+    <interviewLabel>Account Before Tag Unordered {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Account Before Tag Unordered</label>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Assign_Fields</targetReference>
+        </connector>
+        <object>Account</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

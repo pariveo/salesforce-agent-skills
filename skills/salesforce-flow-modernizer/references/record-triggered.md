@@ -24,11 +24,19 @@ Decide `recordTriggerType` from the requirement before opening an example.
 An example's trigger event fits that example's job and says nothing about
 yours.
 
-- Create and update with "only when a record is updated to meet the
-  condition requirements" (`doesRequireRecordChangedToMeetCriteria`) also
-  runs on a create that already meets the conditions. Salesforce treats a
-  new record's before state as meeting none of them ([How Entry Conditions
-  Work in Record-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_working_with_conditions_record_triggered_flows.htm&type=5)).
+<!-- shared:trigger-event -->
+A flow's `recordTriggerType` is `Create`, `Update`, `CreateAndUpdate` or
+`Delete`. With entry conditions on an update, "Every time a record is
+updated and meets the condition requirements" runs the flow on every update
+after which the record meets them. "Only when a record is updated to meet the
+condition requirements" (`doesRequireRecordChangedToMeetCriteria`) runs it
+only when the record didn't meet them before the update and does after. A
+create counts as such a change, because Salesforce treats a new record's
+before state as meeting none of the conditions. So a create and update flow
+with that setting also runs on a create that already meets them
+([How Entry Conditions Work in Record-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_working_with_conditions_record_triggered_flows.htm&type=5)).
+<!-- /shared:trigger-event -->
+
 - Use the Update trigger only when only a change into the condition counts, and a
   record created already meeting it must not run the flow.
 - Use the Create and update trigger when a record that starts out meeting the
@@ -53,7 +61,7 @@ Before-save outranks Transform. When a value on the triggering record is a
 sum over a collection, keep the flow before-save and sum in a Loop declared
 `Escape: E3`, and count with Filter + `AssignCount`. Do not move the work to
 after-save to use a Transform, because the Loop without DML or queries costs
-CPU in memory, while the second save re-runs the whole save order. Salesforce
+CPU in memory, while the second save runs the triggers again. Salesforce
 rates a before-save flow as up to 10 times faster than an after-save flow,
 with no extra save
 ([Decide Between Before-Save and After-Save Record-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_get_started_record_triggered_before_or_after_save.htm&type=5)).
@@ -62,9 +70,24 @@ On create, `$Record.Id` is null in a before-save flow. A Get Records filtered
 on `<Lookup> = $Record.Id` then matches every record whose lookup is empty.
 Query children only on update, or branch on `ISNEW()` first.
 
-An after-save Update Records on the triggering record runs the whole save
-order again: before-save flows, before triggers, validation, after triggers,
-after-save flows. The checker flags it (FLOW005). When it is unavoidable
+<!-- shared:after-save-rerun -->
+An after-save Update Records on the triggering record saves the record
+again in the same transaction, and so does a process's update of the record
+that started it. In that recursive save Salesforce skips steps 9 to 17 of
+the order of execution, from assignment rules to the grandparent's roll-up
+summaries, so workflow rules, processes and after-save flows don't run again
+([Triggers and Order of Execution](https://developer.salesforce.com/docs/platform/apex-dev/references/apex-dev/apex-triggers-order-of-execution.html)).
+Before and after update triggers and duplicate rules do run again. The page
+lists before-save flows among the steps that run, but in a debug log on API
+68.0 they didn't run again in the recursive save. Treat that as observed,
+not documented. Not verified: whether a process set to "Allow process to
+evaluate a record multiple times in a single save operation" evaluates the
+record again in that recursive save, as that option's page says it can when
+a process updates the record. A second DML statement on the record from
+Apex is a new save, not a recursive one, and runs everything again.
+<!-- /shared:after-save-rerun -->
+
+The checker flags such an update (FLOW005). When it is unavoidable
 (for example a value only known after save, such as the record's own Id or
 an autonumber), gate it with change detection so the second pass does
 nothing. Needing a Transform is not that case (see above).
@@ -130,13 +153,20 @@ rules cannot reach (related records, formulas over queried data).
 
 ## Several flows on one object
 
-`triggerOrder` 1–2000 (org API 54, [Flow](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)). Flows 1–1000 run first in
-ascending order (ties by API name), then flows without an order by
-activation date, then 1001–2000. It applies separately to before-save and
-after-save flows. It cannot move a flow ahead of an Apex trigger, and has no
-direct effect on asynchronous or scheduled paths
-([Define the Run Order of Record-Triggered Flows for an Object](https://help.salesforce.com/s/articleView?id=platform.flow_task_trigger_run_order.htm&type=5)). When flow B needs flow A's result,
-merging them or passing state explicitly is still the stronger design.
+<!-- shared:trigger-order -->
+`triggerOrder` 1–2000 (org API 54, [Flow](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm)). Among the flows on
+one object with the same trigger, before-save or after-save, flows 1–1000
+run first in ascending order. Flows with the same value run in alphabetical
+order of their API names. Flows without an order run next, in the order of
+their activation dates, then flows 1001–2000 in ascending order, with the
+same tie-break. The order never moves a flow out of its stage: an after-save
+flow can't run before a before-save flow or an Apex trigger, whatever its
+value. It has no direct effect on asynchronous or scheduled paths
+([Define the Run Order of Record-Triggered Flows for an Object](https://help.salesforce.com/s/articleView?id=platform.flow_task_trigger_run_order.htm&type=5)).
+<!-- /shared:trigger-order -->
+
+When flow B needs flow A's result, merging them or passing state explicitly
+is still the stronger design.
 
 ## Platform event-triggered flows
 
