@@ -377,6 +377,37 @@ check(flowOut.includes(CORE),'hook stays silent on a flows/ path');
 check(runHook('/repo/force-app/main/default/classes/CaseService.cls') === '', 'hook speaks on a classes/ path');
 check(runHook('/repo/README.md') === '', 'hook speaks on a non-sfdx path');
 
+const runCodexHook = (patch) => {
+  const result = spawnSync(process.execPath, [join(root, 'hooks/sfdx-skill-guard.mjs')], {
+    input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'apply_patch', tool_input: { command: patch } }),
+    encoding: 'utf8',
+  });
+  check(result.status === 0, `hook exited ${result.status} for a Codex patch`);
+  return result.stdout;
+};
+const patch = (...sections) => ['*** Begin Patch', ...sections, '*** End Patch', ''].join('\n');
+const FLOW = 'force-app/main/default/flows/Case_Set_Priority.flow-meta.xml';
+const CLASS = 'force-app/main/default/classes/CaseService.cls';
+const speaksOnce = (out) => {
+  try {
+    return JSON.parse(out).hookSpecificOutput.additionalContext.includes(CORE);
+  } catch {
+    return false;
+  }
+};
+
+check(speaksOnce(runCodexHook(patch(`*** Add File: ${FLOW}`, '+<Flow/>'))), 'hook gives no single reminder on a Codex patch adding a flow');
+check(speaksOnce(runCodexHook(patch(`*** Update File: /repo/${FLOW}`, '@@', '-<a/>', '+<b/>'))), 'hook gives no single reminder on a Codex patch updating a flow');
+check(
+  speaksOnce(runCodexHook(patch(`*** Update File: ${CLASS}`, '@@', '-a', '+b', `*** Add File: ${FLOW}`, '+<Flow/>', `*** Add File: ${FLOW.replace('Case_', 'Lead_')}`, '+<Flow/>'))),
+  'hook gives no single reminder on a multi-file Codex patch with flows',
+);
+check(speaksOnce(runCodexHook(patch('*** Update File: tmp/Draft.flow-meta.xml', `*** Move to: ${FLOW}`, '@@', '-a', '+b'))), 'hook gives no single reminder on a Codex patch moving a file into flows/');
+check(runCodexHook(patch(`*** Update File: ${FLOW}`, `*** Move to: tmp/Draft.flow-meta.xml`, '@@', '-a', '+b')) === '', 'hook speaks on a Codex patch moving a flow out of flows/');
+check(runCodexHook(patch(`*** Add File: ${CLASS}`, '+class CaseService {}', '*** Update File: README.md', '@@', '-a', '+b')) === '', 'hook speaks on a Codex patch with no flow');
+check(runCodexHook(patch(`*** Delete File: ${FLOW}`)) === '', 'hook speaks on a Codex patch deleting a flow');
+check(runCodexHook('') === '', 'hook speaks on an empty Codex patch');
+
 const malformed = spawnSync(process.execPath, [join(root, 'hooks/sfdx-skill-guard.mjs')], {
   input: 'not json',
   encoding: 'utf8',
