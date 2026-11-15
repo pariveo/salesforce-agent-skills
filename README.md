@@ -71,9 +71,12 @@ codex plugin add salesforce-agent-skills@pariveo
 
 The plugin's skill is then named
 `salesforce-agent-skills:salesforce-flow-modernizer`. Codex asks you to trust
-the plugin's hook, which runs without a reminder on `apply_patch` edits
-because [Codex sends `tool_input.command`](https://learn.chatgpt.com/docs/hooks#pretooluse)
-and the hook reads `tool_input.file_path`.
+the plugin's hook, and asks again whenever an update changes it. Codex writes
+files through `apply_patch` and
+[sends the patch as `tool_input.command`](https://learn.chatgpt.com/docs/hooks#pretooluse).
+The hook reads the file paths from that patch, and when a patch adds,
+updates or moves a file into a `*/main/default/flows/` folder, it reminds
+the session to load the skill.
 
 ## Compatibility
 
@@ -81,7 +84,8 @@ Checked plugin installation with Claude Code 2.1.296 and Codex CLI 0.163.0
 on macOS. For 0.3.1, each tool installed the plugin from a clone into a
 fresh configuration directory and listed the skill afterwards, and Codex
 also found it through `.agents/skills/` and a user skills folder. Hook trust
-and execution were checked with Codex CLI 0.169.0-alpha.11.1 on macOS.
+and the Flow reminder on `apply_patch` edits were checked with Codex CLI
+0.169.0-alpha.11.1 on macOS.
 
 The example flows deploy on org API 67.0 and 68.0, and the decision table
 lists the lowest org API version for each element, so the skill also works

@@ -31,8 +31,13 @@ version instead.
 - **The README's "Make it yours" section names the harness building blocks**
   (specs, skills, rules, subagents and hooks) and links Pariveo's workshops,
   where a team sets up such a harness for its own org.
-- The Codex install instructions explain the hook trust prompt and why
-  `apply_patch` edits don't produce a Flow reminder.
+- **Breaking: the hook gives the Flow reminder on Codex `apply_patch`
+  edits.** It reads the patch text in `tool_input.command` and speaks once
+  when the patch adds, updates or moves a file into a
+  `*/main/default/flows/` folder. Deletions and other paths stay silent, and
+  Claude Code's `tool_input.file_path` input and reminder are unchanged.
+  Codex asks you to review and trust the changed hook again after the
+  update. The Codex install instructions explain the trust prompt.
 
 ## [0.5.0] - 2026-10-29
 
