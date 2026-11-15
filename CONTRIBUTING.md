@@ -20,7 +20,8 @@ Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
 - Node.js. The checker, the hook and the maintainer scripts use only Node's
   standard library, so there's nothing to install.
 - Salesforce CLI and a scratch org, if you change anything under
-  `skills/salesforce-flow-modernizer/examples/`.
+  `skills/salesforce-flow-modernizer/examples/` or
+  `evals/fixtures/account-automation/`.
 
 ## Rules for content
 
@@ -38,6 +39,16 @@ turns into a wrong flow.
   employer or org names and no record IDs.
 - `references/org-conventions.md` ships with every slot unset. Fill it in
   your fork or your own project, never here.
+- A platform fact that more than one skill states has its source in
+  `salesforce-flow-modernizer`, between `<!-- shared:<id> -->` and
+  `<!-- /shared:<id> -->` markers. Every other skill that states it holds an
+  exact copy between the same markers. Change the core's block first, then
+  the copies. The smoke test fails while a copy differs.
+- A skill that no benchmark has measured opens its section under "What it
+  does" in the README with this line: "Not measured yet. The evals check
+  what it does. No benchmark has measured how it changes an agent's
+  output." The section describes what the skill does and states no effect.
+  The line goes when a published benchmark measures the skill.
 
 ## Code comments
 
@@ -136,7 +147,9 @@ node scripts/smoke-test.mjs
 It checks the manifests and then every folder under `skills/` that holds a
 `SKILL.md`: its Codex symlink, its frontmatter name and description, its
 length, its links to `references/` and to sibling skills, its examples and its
-release stamp. It then checks the core skill's examples against the checker,
+release stamp. It then checks every shared block against the core skill's,
+runs the mapper script on the fixture project in
+`evals/fixtures/account-automation/`, checks the core skill's examples against the checker,
 the checker against the legacy fixture, the release baseline and the review
 scripts against the core skill, the deploy command
 `validate-examples.mjs` runs, the release and release notes scripts on a

@@ -17,6 +17,18 @@ version instead.
 
 ### Added
 
+- **A second skill, `salesforce-automation-mapper`, lists all the automation
+  on one object and the order it runs in, without changing anything.** It
+  reads the local sfdx project with `scripts/map-automation.mjs`: flows,
+  Process Builder processes, workflow rules and Apex triggers, and the
+  fields each writes. It orders them by the rules in
+  `references/save-order.md`, each sourced: the stages of a save, trigger
+  order bands and their tie-break, which saves run each automation, what
+  runs again on a workflow field update or an after-save update of the
+  record, and which value a field ends with when two automations write it.
+  Four eval cases check it on a new Account fixture, deployed and saved in
+  a Winter '27 scratch org. In Codex, link it next to
+  `salesforce-flow-modernizer`, whose conventions file it reads.
 - **The decision table recommends the Collection Filter Criteria resource**
   (Winter '27, API 68.0) to find one record in a collection: the first match
   after a sort, referenced directly by later elements, in place of a loop that
@@ -28,6 +40,14 @@ version instead.
 
 ### Changed
 
+- **`salesforce-flow-modernizer` covers building, changing, auditing and
+  migrating flows**, and its description hands listing the automation on an
+  object to `salesforce-automation-mapper`. Before a record-triggered flow is
+  built or changed, step 3 has the mapper list what else runs on the object.
+  `references/legacy-migration.md` adds how workflow rules and processes
+  run: evaluation criteria, field updates that save the record again or
+  re-evaluate rules, and a process's start and "only when specified
+  changes".
 - **The README's "Make it yours" section names the harness building blocks**
   (specs, skills, rules, subagents and hooks) and links Pariveo's workshops,
   where a team sets up such a harness for its own org.
@@ -41,6 +61,13 @@ version instead.
 
 ### Fixed
 
+- `references/record-triggered.md` no longer says an after-save update of
+  the triggering record runs the whole save order again. Workflow rules,
+  processes and after-save flows don't run in that recursive save, and
+  before-save flows didn't either in a debug log on API 68.0. The Apex
+  update triggers and duplicate rules do. The trigger order paragraph
+  states the tie-break and that the order never moves a flow out of its
+  stage, from the current help page.
 - The troubleshooting notes in `references/delivery.md` match the current
   documentation, each with its source. Autolaunched and record-triggered
   flows use Test Mode instead of Debug, the Setup list holds interviews

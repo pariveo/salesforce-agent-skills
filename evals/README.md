@@ -19,6 +19,10 @@ checks.
 | `filter-criteria-first-match` | Collection Filter Criteria resource sorted on `CloseDate` picks one record, one Create, no loop |
 | `loop-with-escape` | A loop that is right (sequence numbers) is kept and declared `Escape: E2`, with one Update |
 | `audit-legacy-flow` | Audit of a seeded legacy flow: DML in the loop ranked first, replacements named, file untouched |
+| `map-account-create` | Map of the Account fixture on a create: before-save flows in trigger order with the API-name tie-break, workflow rules and the process before the after-save flows, create-only and update-only flows told apart |
+| `map-revenue-update` | An update into a workflow rule's criteria: the field update re-runs the Apex triggers but no flow, re-evaluation fires the second rule, and the values Rating and Site end with |
+| `map-field-overlap` | Fields more than one automation writes, and the value each ends with after a create |
+| `map-no-automation` | An object with no automation gets a short answer and nothing invented |
 
 Regex graders read the produced flow file, so their verdicts are exact. They
 can't prove the file deploys, because a join split across two Transforms, or
@@ -29,6 +33,15 @@ skill was invoked, and Claude Code keeps it out of the score so the
 with-plugin and without-plugin arms stay comparable. The two `llm` graders in
 the audit case judge the final answer.
 
+The four `map-` cases are for `salesforce-automation-mapper`. Their setup
+script copies the project in `fixtures/account-automation/` into the
+workspace. That project was deployed and its saves were traced in a scratch
+org, and its README records the deploy result and what the debug logs
+showed, which is what the graders check. Besides `skill-fired`, each case
+has a `core-not-loaded` indicator: it fails when the run also loads
+`salesforce-flow-modernizer`, which would mean the two descriptions
+overlap. `no-edit` and `no-write` check that no project file changed.
+
 ## Run
 
 From the repository root, with a Claude Code build that has `plugin eval`
@@ -38,13 +51,15 @@ generally available (`claude update` if it reports early access):
 claude plugin eval . --scaffold --allow-tools Write Edit "Bash(node *)" --no-publish
 ```
 
-- `--scaffold` runs `audit-legacy-flow/setup.sh`, which copies the fixture
-  into the run's workspace. It is the only script in the suite.
-- `Bash(node *)` lets the agent run the skill's `check-flow.mjs`. No run needs
-  an org, and the prompts say none is connected.
+- `--scaffold` runs each case's `setup.sh`, which copies its fixture into
+  the run's workspace: `audit-legacy-flow` and the four `map-` cases have
+  one.
+- `Bash(node *)` lets the agent run the skills' scripts, `check-flow.mjs`
+  and `map-automation.mjs`. No run needs an org, and the prompts say none is connected.
 - Each case runs three times with the plugin and three times without it.
   The difference (Δ) is what the skill contributes. Add `--runs 1 --ablation
-  none` for a quick, cheaper pass, `--tag smoke` for the four core cases, and
+  none` for a quick, cheaper pass, `--tag smoke` for the four core cases,
+  `--tag map` for the four mapper cases, and
   `--model` to compare models. Anthropic's
   [skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
   recommend testing a skill with every model you plan to use it with.
@@ -55,4 +70,5 @@ claude plugin eval . --scaffold --allow-tools Write Edit "Bash(node *)" --no-pub
 
 The deterministic checks run in CI through `node scripts/smoke-test.mjs` and
 cost nothing. They confirm that the example flows pass the checker, that the
-checker catches the legacy fixture, and that every case is well-formed.
+checker catches the legacy fixture, that the mapper script lists the Account
+fixture's automation and overlaps, and that every case is well-formed.

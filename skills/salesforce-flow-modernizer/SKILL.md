@@ -5,10 +5,13 @@ description: >
   (Collection Filter, Transform including sums, counts and joins, record and
   picklist choice sets, reactive screens, screen actions, before-save updates,
   custom errors, asynchronous and scheduled paths, platform event triggers and
-  waits, agent actions) instead of loop-and-decision patterns. Use for any
-  Flow work: writing or reviewing .flow-meta.xml metadata, Flow Builder build
-  specs, screen, record-triggered, autolaunched or scheduled flows, migrating
-  Process Builder or workflow rules, and troubleshooting flows.
+  waits, agent actions) instead of loop-and-decision patterns. Use for
+  building, changing, auditing or migrating flows: writing or reviewing
+  .flow-meta.xml metadata, Flow Builder build specs, screen,
+  record-triggered, autolaunched or scheduled flows, migrating Process
+  Builder or workflow rules, and troubleshooting flows. To list all the
+  automation on one object and the order it runs in, use
+  salesforce-automation-mapper instead.
 ---
 
 # Salesforce Flow modernization
@@ -62,7 +65,9 @@ requirement before you open any example. The question is whether a record
 created already meeting the condition counts, or only one that changes into
 it. Create and update with "only when updated to meet the condition" fires
 on such a create, while update-only does not. If the requirement does not say, ask or state the
-assumption ([record-triggered.md](references/record-triggered.md)). Who runs it (user, system,
+assumption ([record-triggered.md](references/record-triggered.md)). Before you build or change a
+record-triggered flow, have the `salesforce-automation-mapper` skill list
+what else runs on the object and in which order. Who runs it (user, system,
 agent). What must happen synchronously. For screen flows, the surface that
 embeds it and what it takes in and hands back.
 
@@ -234,7 +239,7 @@ Read the ones the task needs:
 - [record-triggered.md](references/record-triggered.md): before-save and after-save, entry conditions, asynchronous and scheduled paths, custom errors, trigger order, platform events, waits, file triggers.
 - [integration-and-security.md](references/integration-and-security.md): HTTP callouts, email, Get Records options, running context, fault paths, subflows, hard-coded IDs.
 - [ai-and-agents.md](references/ai-and-agents.md): agent actions, Run Agent, AI decisions, prompt templates, Data 360, orchestration.
-- [legacy-migration.md](references/legacy-migration.md): Process Builder and workflow rule mapping.
+- [legacy-migration.md](references/legacy-migration.md): Process Builder and workflow rule mapping, and how both run.
 - [delivery.md](references/delivery.md): audit report, build spec, activation and deployment, Flow Tests, troubleshooting, review checklist.
 - `examples/flows/*.flow-meta.xml`: one deployable flow per pattern, whose header comment names the pattern, what it replaces, and its shape rules. `examples/objects/` holds the platform event they use.
 - `scripts/check-flow.mjs`: the checker (step 6).

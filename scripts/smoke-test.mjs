@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readlinkSync, existsSync, readdirSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { bareMentions } from './mentions.mjs';
 
@@ -122,6 +122,85 @@ for (const name of skills) {
       if (/^(Object|Type)_/.test(apiName) || !/_(Create|Before|Closed|Event|Wait|Order|Check|Get|Allocate|Count)/.test(apiName)) continue;
       check(exampleFlows.includes(`${apiName}.flow-meta.xml`), `${at}/SKILL.md names example ${apiName}, which does not exist`);
     }
+  }
+}
+
+// Shared blocks: the core skill holds each one once, and every copy in another
+// skill matches it character for character.
+const markdownOf = (dir) => [
+  join(dir, 'SKILL.md'),
+  ...(existsSync(join(dir, 'references')) ? readdirSync(join(dir, 'references')).filter((f) => f.endsWith('.md')).map((f) => join(dir, 'references', f)) : []),
+];
+const SHARED = /<!-- shared:([\w-]+) -->\n([\s\S]*?)<!-- \/shared:([\w-]+) -->/g;
+const sharedBlocks = (dir) =>
+  markdownOf(dir).flatMap((file) => {
+    const source = readFileSync(file, 'utf8');
+    const opens = source.match(/<!-- shared:[\w-]+ -->/g)?.length ?? 0;
+    const blocks = [...source.matchAll(SHARED)].map(([, id, body, closeId]) => ({ id, body, closeId, file: relative(root, file) }));
+    check(opens === blocks.length, `${relative(root, file)} has a shared: marker without its /shared: marker`);
+    for (const b of blocks) check(b.id === b.closeId, `${b.file} opens shared:${b.id} and closes shared:${b.closeId}`);
+    return blocks;
+  });
+const coreShared = new Map();
+for (const block of sharedBlocks(coreDir)) {
+  check(!coreShared.has(block.id), `skills/${CORE} holds shared:${block.id} more than once`);
+  coreShared.set(block.id, block.body);
+}
+for (const name of skills.filter((s) => s !== CORE)) {
+  for (const block of sharedBlocks(join(skillsRoot, name))) {
+    check(coreShared.has(block.id), `${block.file} copies shared:${block.id}, which skills/${CORE} doesn't hold`);
+    if (coreShared.has(block.id)) check(block.body === coreShared.get(block.id), `${block.file} shared:${block.id} differs from the copy in skills/${CORE}`);
+  }
+}
+
+// Automation mapper: lists the fixture project's automation and its overlaps
+const mapper = join(skillsRoot, 'salesforce-automation-mapper', 'scripts', 'map-automation.mjs');
+if (existsSync(mapper)) {
+  const fixtureProject = join(root, 'evals', 'fixtures', 'account-automation');
+  const runMapper = (object, dir) => {
+    const result = spawnSync(process.execPath, [mapper, '--object', object, '--project-dir', dir, '--json'], { encoding: 'utf8' });
+    try {
+      return { status: result.status, out: JSON.parse(result.stdout) };
+    } catch {
+      return { status: result.status, out: null };
+    }
+  };
+  const map = runMapper('Account', fixtureProject);
+  const byName = new Map((map.out?.items ?? []).map((i) => [i.name, i]));
+  check(map.status === 0 && byName.size === 12, `map-automation lists ${byName.size} items on the fixture's Account (expected 12)`);
+  const expectItems = {
+    Account_Before_Tag_A: { stage: 'before-save', event: 'CreateAndUpdate', triggerOrder: 10 },
+    Account_Before_Tag_Unordered: { stage: 'before-save', triggerOrder: null },
+    Account_Before_Tag_Late: { stage: 'before-save', triggerOrder: 1500 },
+    Account_After_Create_Set_Rating: { stage: 'after-save', event: 'Create', triggerOrder: 20 },
+    Account_After_Revenue_Reached: { stage: 'after-save', event: 'Update', onlyWhenUpdatedToMeet: true },
+    Account_Daily_Review: { kind: 'schedule-triggered flow', status: 'Draft' },
+    Account_Process_Banking: { kind: 'process', start: 'onAllChanges' },
+    Account_Hot_Rating: { kind: 'workflow rule', evaluation: 'onCreateOrTriggeringUpdate' },
+    Account_Flag_Hot: { kind: 'workflow rule', evaluation: 'onAllChanges' },
+    AccountTrigger: { kind: 'Apex trigger', status: 'Active' },
+  };
+  for (const [name, facts] of Object.entries(expectItems)) {
+    for (const [key, value] of Object.entries(facts)) {
+      check(byName.get(name)?.[key] === value, `map-automation reports ${name} ${key} as ${JSON.stringify(byName.get(name)?.[key])}, not ${JSON.stringify(value)}`);
+    }
+  }
+  check(byName.get('Account_Process_Banking')?.criteria?.[0]?.onlyWhenChanged === true, 'map-automation misses the process node set to only when specified changes');
+  check(/re-evaluates workflow rules/.test(byName.get('Account_Hot_Rating')?.writes?.Rating?.[0] ?? ''), 'map-automation misses the field update that re-evaluates workflow rules');
+  const writers = (field) => (map.out?.fieldWriters?.[field] ?? []).map((w) => w.split(': ')[1]).sort().join();
+  check(writers('Rating') === 'Account_After_Create_Set_Rating,Account_Before_Tag_A,Account_Hot_Rating', `map-automation lists Rating writers ${writers('Rating')}`);
+  check(writers('Type') === 'Account_Before_Tag_Late,Account_Process_Banking', `map-automation lists Type writers ${writers('Type')}`);
+  check(writers('Site') === 'Account_Flag_Hot', `map-automation lists Site writers ${writers('Site')}`);
+  const empty = runMapper('Contact', fixtureProject);
+  check(empty.status === 0 && empty.out?.items.length === 0, 'map-automation lists automation on Contact in the fixture, which has none');
+  const bare = mkdtempSync(join(tmpdir(), 'map-bare-'));
+  try {
+    mkdirSync(join(bare, 'force-app'));
+    writeFileSync(join(bare, 'sfdx-project.json'), '{"packageDirectories":[{"path":"force-app","default":true}]}');
+    const partial = runMapper('Account', bare);
+    check(partial.status === 2 && partial.out?.notes.some((n) => /No flows\/ folder.*retrieve/i.test(n)), 'map-automation does not say what to retrieve in a project without flows/');
+  } finally {
+    rmSync(bare, { recursive: true, force: true });
   }
 }
 
@@ -349,7 +428,7 @@ if (process.platform !== 'win32') {
 
 // Eval suite: every case has a prompt and graders with a type
 const evalsDir = join(root, 'evals');
-const cases = readdirSync(evalsDir, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'results');
+const cases = readdirSync(evalsDir, { withFileTypes: true }).filter((d) => d.isDirectory() && !['results', 'fixtures'].includes(d.name));
 check(cases.length >= 8, `only ${cases.length} eval cases`);
 for (const { name } of cases) {
   const dir = join(evalsDir, name);
