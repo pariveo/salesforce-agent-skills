@@ -2,7 +2,8 @@
 // PreToolUse guard: reminds Claude Code to load the matching skill before it
 // writes Flow metadata in an sfdx project. Reads the hook event JSON on stdin,
 // emits additionalContext on a match, stays silent otherwise, and never blocks
-// (always exits 0). Claude Code only: Codex does not run hooks.
+// (always exits 0). See the Codex install notes in README.md for why
+// apply_patch edits leave the guard silent.
 
 const SKILLS = {
   flows: 'salesforce-flow-modernizer',

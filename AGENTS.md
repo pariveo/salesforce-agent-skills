@@ -43,8 +43,9 @@ on help.salesforce.com and developer.salesforce.com.
 
 ## Platform notes
 
-- The `hooks/` directory serves Claude Code only. Codex doesn't run these
-  hooks, so under Codex the skill is invoked through its description alone.
+- Codex offers the plugin's hook for trust, but the hook gives no reminder
+  on [`apply_patch` edits](https://learn.chatgpt.com/docs/hooks#pretooluse)
+  because it reads `tool_input.file_path` and Codex sends `tool_input.command`.
 - The hook script needs Node.js on the PATH. It's advisory, which means it
   adds a reminder to the session and never blocks a tool call.
 

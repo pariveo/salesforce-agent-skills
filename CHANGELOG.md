@@ -31,6 +31,8 @@ version instead.
 - **The README's "Make it yours" section names the harness building blocks**
   (specs, skills, rules, subagents and hooks) and links Pariveo's workshops,
   where a team sets up such a harness for its own org.
+- The Codex install instructions explain the hook trust prompt and why
+  `apply_patch` edits don't produce a Flow reminder.
 
 ## [0.5.0] - 2026-10-29
 
