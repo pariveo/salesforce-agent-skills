@@ -26,6 +26,12 @@ version instead.
   adds what the run showed: a Number variable works as a filter's right value,
   and a Currency variable deploys but fails at run time.
 
+### Changed
+
+- **The README's "Make it yours" section names the harness building blocks**
+  (specs, skills, rules, subagents and hooks) and links Pariveo's workshops,
+  where a team sets up such a harness for its own org.
+
 ## [0.5.0] - 2026-10-29
 
 ### Added
