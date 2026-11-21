@@ -119,8 +119,9 @@ part of the plugin. It walks through these steps:
 - `node scripts/source-inventory.mjs` lists every source the skills cite,
   with each claim that cites it, and every "Not verified" mark. In a group of
   their own, it lists the help.salesforce.com and developer.salesforce.com
-  pages this file cites for the maintainer scripts. This file's other links
-  back no platform claim, so the inventory leaves them out.
+  pages this file cites for the maintainer scripts, and in another the ones
+  the guides under `docs/` cite for the commands they give. This file's
+  other links back no platform claim, so the inventory leaves them out.
 - `node scripts/validate-examples.mjs --target-org <alias> --api <version>`
   deploy-validates the examples raised to the new API version. It runs
   `sf project deploy start --dry-run --test-level NoTestRun`, so the result

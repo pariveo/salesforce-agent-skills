@@ -110,6 +110,10 @@ for the maintainer scripts. They back no skill claim. Check each against the
 command next to it in CONTRIBUTING.md. A mismatch is a finding against that
 script or CONTRIBUTING.md, not against a skill.
 
+The guide sources are the official pages the guides under `docs/` cite for
+the commands they give. Check each command against its page. A mismatch is a
+finding against that guide.
+
 **Step 6. Examples.** With an org on the target release:
 
 ```bash

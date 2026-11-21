@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Lists every source the plugin skills cite with the claims that cite it, plus
 // the "Not verified" marks and the releases named, as a release review checklist.
-// The official pages CONTRIBUTING.md cites for the maintainer scripts get a
-// group of their own, so they aren't read as skill claims.
+// The official pages CONTRIBUTING.md cites for the maintainer scripts, and
+// those the guides under docs/ cite, get groups of their own, so they aren't
+// read as skill claims.
 //
 //   node scripts/source-inventory.mjs [--json]
 
@@ -78,6 +79,10 @@ for (const file of files) {
 // CONTRIBUTING.md's other links are conventions and the licence, not platform claims
 const maintainerCitations = cites(readFileSync(join(root, 'CONTRIBUTING.md'), 'utf8'), 'CONTRIBUTING.md').filter((c) => OFFICIAL.has(c.host));
 
+const guideCitations = listed(join(root, 'docs'), (f) => f.endsWith('.md'))
+  .flatMap((file) => cites(readFileSync(file, 'utf8'), relative(root, file)))
+  .filter((c) => OFFICIAL.has(c.host));
+
 function bySource(list) {
   const sources = new Map();
   for (const c of list) sources.set(c.url, [...(sources.get(c.url) ?? []), c]);
@@ -94,6 +99,7 @@ const result = {
   baseline,
   sources: bySource(citations),
   maintainerSources: bySource(maintainerCitations),
+  guideSources: bySource(guideCitations),
   unverified,
   releases: Object.fromEntries([...releases].sort(([a], [b]) => releaseOrder(a) - releaseOrder(b))),
   apiVersions: Object.fromEntries([...apis].sort(([a], [b]) => a - b)),
@@ -112,6 +118,7 @@ function report() {
     `Baseline: ${baseline.release} (API ${baseline.apiVersion}.0), reviewed ${baseline.reviewedOn}.`,
     `${official.length} official sources, ${citations.length} citations, ${unverified.length} "Not verified" marks.`,
     `${result.maintainerSources.length} official sources for the maintainer scripts, ${maintainerCitations.length} citations.`,
+    `${result.guideSources.length} official sources for the guides under docs/, ${guideCitations.length} citations.`,
     'Skill paths are relative to skills/.',
     '',
     '## Official sources',
@@ -130,6 +137,15 @@ function report() {
   );
   if (!result.maintainerSources.length) out.push('None.');
   for (const s of result.maintainerSources) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
+  out.push(
+    '',
+    '## Guide sources',
+    '',
+    'Cited in the guides under docs/ for the commands they give. These back no skill claim. Tick each page when the command next to it still runs as the guide says.',
+    '',
+  );
+  if (!result.guideSources.length) out.push('None.');
+  for (const s of result.guideSources) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
   out.push('', '## Other hosts', '', 'Not on help.salesforce.com or developer.salesforce.com. Keep only if no official page states the claim.', '');
   if (!other.length) out.push('None.');
   for (const s of other) out.push(`- [ ] ${s.url}`, ...s.citations.map(cite));
