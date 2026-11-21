@@ -238,6 +238,10 @@ node skills/salesforce-automation-mapper/scripts/map-automation.mjs --object Acc
 Then ask the agent, started in `evals/fixtures/account-automation`, what
 runs when an account is created there, and in which order.
 
+New to the Salesforce CLI? [A first hour for admins](docs/first-hour-for-admins.md)
+copies your sandbox's automation into a local project, without changing the
+org, and runs both skills on it.
+
 In your own project, ask for example:
 
 - "Audit `Case_Escalation_Handler` for legacy patterns and write the

@@ -392,6 +392,9 @@ check(inventory.status === 0 && inventory.out?.sources.length > 0, 'source-inven
 const contributingLinks = readFileSync(join(root, 'CONTRIBUTING.md'), 'utf8').match(/https:\/\/(?:help|developer)\.salesforce\.com\//g)?.length ?? 0;
 const maintainerCitations = inventory.out?.maintainerSources?.flatMap((s) => s.citations.filter((c) => c.file === 'CONTRIBUTING.md')) ?? [];
 check(maintainerCitations.length === contributingLinks, `source-inventory lists ${maintainerCitations.length} of the ${contributingLinks} official links in CONTRIBUTING.md`);
+const guideLinks = readdirSync(join(root, 'docs')).filter((f) => f.endsWith('.md')).reduce((n, f) => n + (readFileSync(join(root, 'docs', f), 'utf8').match(/https:\/\/(?:help|developer)\.salesforce\.com\//g)?.length ?? 0), 0);
+const guideCitations = inventory.out?.guideSources?.flatMap((s) => s.citations) ?? [];
+check(guideCitations.length === guideLinks, `source-inventory lists ${guideCitations.length} of the ${guideLinks} official links in docs/`);
 
 // validate-examples must deploy without running the org's Apex tests. A stub
 // `sf` on PATH prints the arguments it was called with.
