@@ -1,6 +1,6 @@
 {
   "name": "salesforce-agent-skills",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Salesforce skills for AI coding agents: one builds and audits Flows with current elements instead of loop-and-decision patterns, with deploy-verified metadata examples and a checker, and one lists all automation on an object and the order it runs in.",
   "author": {
     "name": "Pariveo",
