@@ -154,7 +154,7 @@ runs the mapper script on the fixture project in
 the checker against the legacy fixture, the release baseline and the review
 scripts against the core skill, the deploy command
 `validate-examples.mjs` runs, the release and release notes scripts on a
-copy of the manifests and changelog, bare `@` mentions in the changelog, the eval suite's shape, the hook's behaviour, and
+copy of the manifests and changelog, bare `@` mentions in the changelog, the release each guide under `docs/` names, the eval suite's shape, the hook's behaviour, and
 the code comments. CI runs the same script.
 
 If you changed `SKILL.md` or a reference, consider running the eval suite as

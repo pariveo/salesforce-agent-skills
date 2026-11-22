@@ -8,11 +8,12 @@ your own computer.
 
 **Nothing in this guide changes your org.** Every step reads from it.
 
-The guide was checked on 21 November 2026 on macOS, with Salesforce CLI
-2.159.7 and Claude Code 2.1.330. The commands in steps 1 and 3 ran
-against a Winter '27 (API 68.0) scratch org, and the scripts behind steps 4
-and 5 ran on the project that step 3 created. If a command no longer matches
-its reference page,
+Install the current version of each tool. The guide was last checked on
+21 November 2026 on macOS, with Salesforce CLI 2.159.7 and Claude Code
+2.1.330, against a Winter '27 (API 68.0) scratch org. The commands in steps 1
+and 3 ran there, and the scripts behind steps 4 and 5 ran on the project that
+step 3 created. The release review checks it again for each Salesforce
+release. If a command no longer matches its reference page,
 [open an issue](https://github.com/pariveo/salesforce-agent-skills/issues/new/choose)
 and the step gets fixed.
 

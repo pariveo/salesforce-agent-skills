@@ -23,7 +23,9 @@ version instead.
   flows, workflow rules and Apex triggers, then asks for one object's
   automation map and a flow audit. No step changes the org. The release
   review's source inventory lists the CLI reference pages the guide cites,
-  in a group of their own.
+  in a group of their own, and the smoke test fails when the release the
+  guide was checked against isn't the baseline, so each release review
+  checks the guide again.
 - **A second skill, `salesforce-automation-mapper`, lists all the automation
   on one object and the order it runs in, without changing anything.** It
   reads the local sfdx project with `scripts/map-automation.mjs`: flows,
