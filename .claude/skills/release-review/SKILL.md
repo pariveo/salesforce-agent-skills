@@ -110,6 +110,10 @@ for the maintainer scripts. They back no skill claim. Check each against the
 command next to it in CONTRIBUTING.md. A mismatch is a finding against that
 script or CONTRIBUTING.md, not against a skill.
 
+The guide sources are the official pages the guides under `docs/` cite for
+the commands they give. Check each command against its page. A mismatch is a
+finding against that guide.
+
 **Step 6. Examples.** With an org on the target release:
 
 ```bash
@@ -177,6 +181,9 @@ recorded as "no change", update these together in one pull request:
 - The API version a `SKILL.md` falls back to when there's no org, in every
   skill that states one
 - The review sentence under "Compatibility" in `README.md`
+- The "last checked" sentence in every guide under `docs/` that names a
+  release, with the date, the tool versions and the release, once its
+  commands have run again against an org on the target release
 - `maintenance/flow-schema/<api>.json`, saved with
   `node scripts/diff-flow-schema.mjs .release-review/metadata-<api>.wsdl --api <api> --write`
 - A CHANGELOG line under `[Unreleased]` that names the release reviewed

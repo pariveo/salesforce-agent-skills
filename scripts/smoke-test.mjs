@@ -345,6 +345,16 @@ try {
 check(flat(coreMd).includes(`or ${baseline.apiVersion}.0 when that is missing`), `skills/${CORE}/SKILL.md step 2 does not fall back to ${baseline.apiVersion}.0`);
 check(flat(readFileSync(join(root, 'README.md'), 'utf8')).includes(stamp), `README.md does not say the skill was ${stamp}`);
 
+// A guide under docs/ that names a release was last checked against it. It
+// must name the baseline, so moving the baseline fails here until the guide
+// is checked again.
+const baselineRelease = `${baseline.release} (API ${baseline.apiVersion}.0)`;
+for (const f of readdirSync(join(root, 'docs')).filter((f) => f.endsWith('.md'))) {
+  const guide = flat(readFileSync(join(root, 'docs', f), 'utf8'));
+  const named = [...new Set(guide.match(/\b(?:Spring|Summer|Winter) '\d\d\b/g) ?? [])];
+  if (named.length) check(named.length === 1 && guide.includes(baselineRelease), `docs/${f} names ${named.join(', ')}, not only the baseline ${baselineRelease}`);
+}
+
 // Maintainer skill and its Codex symlink
 const reviewSkill = join(root, '.claude', 'skills', 'release-review');
 check(/^name: release-review$/m.test(readFileSync(join(reviewSkill, 'SKILL.md'), 'utf8')), 'release-review SKILL.md has no matching name');
@@ -392,6 +402,9 @@ check(inventory.status === 0 && inventory.out?.sources.length > 0, 'source-inven
 const contributingLinks = readFileSync(join(root, 'CONTRIBUTING.md'), 'utf8').match(/https:\/\/(?:help|developer)\.salesforce\.com\//g)?.length ?? 0;
 const maintainerCitations = inventory.out?.maintainerSources?.flatMap((s) => s.citations.filter((c) => c.file === 'CONTRIBUTING.md')) ?? [];
 check(maintainerCitations.length === contributingLinks, `source-inventory lists ${maintainerCitations.length} of the ${contributingLinks} official links in CONTRIBUTING.md`);
+const guideLinks = readdirSync(join(root, 'docs')).filter((f) => f.endsWith('.md')).reduce((n, f) => n + (readFileSync(join(root, 'docs', f), 'utf8').match(/https:\/\/(?:help|developer)\.salesforce\.com\//g)?.length ?? 0), 0);
+const guideCitations = inventory.out?.guideSources?.flatMap((s) => s.citations) ?? [];
+check(guideCitations.length === guideLinks, `source-inventory lists ${guideCitations.length} of the ${guideLinks} official links in docs/`);
 
 // validate-examples must deploy without running the org's Apex tests. A stub
 // `sf` on PATH prints the arguments it was called with.
